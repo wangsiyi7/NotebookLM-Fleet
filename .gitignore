@@ -1,0 +1,30 @@
+# Runtime state, databases, OAuth secrets & browser profiles (NEVER commit)
+data/
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+*.sqlite3
+client_secret*.json
+*storage_state.json
+
+# Python / uv / test caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# OS & editor clutter
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Generated binary whitepaper exports (published via GitHub Releases; rebuild via build_exports.py)
+docs/sharing_archive_v1/*.pdf
+docs/sharing_archive_v1/*.docx

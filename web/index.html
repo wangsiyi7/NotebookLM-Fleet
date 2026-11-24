@@ -1,0 +1,1773 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NotebookLM Fleet · 工作区中枢与官方 API / MCP 实验室</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23136f63'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='32' font-family='serif'%3EN%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f5f3ee; --card:#ffffff; --ink:#20241f; --muted:#7a7f78;
+  --line:#e4e0d5; --accent:#136f63; --accent-soft:#e3f0ed;
+  --red:#b3402f; --amber:#9a6b16; --blue:#2456a6; --sidebar-bg:#faf8f3;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.55}
+
+/* Top Bar */
+.top-wrap{background:var(--card);border-bottom:2px solid var(--ink);padding:12px 18px}
+.top{max-width:1680px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.brand h1{font-family:"Songti SC","STSong","SimSun",serif;font-size:22px;letter-spacing:1.2px}
+.brand .sub{color:var(--muted);font-size:12px;margin-top:2px}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.save{font-size:12px;padding:3px 10px;border-radius:999px;white-space:nowrap}
+.save.ok{background:var(--accent-soft);color:var(--accent)}
+.save.warn{background:#fbeae4;color:var(--red)}
+
+.btn{appearance:none;border:1px solid var(--ink);background:var(--card);color:var(--ink);padding:6px 12px;border-radius:8px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.btn:hover{background:#f0ede4}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#0e5a50}
+.btn.sm{padding:4px 8px;font-size:11.5px;border-radius:6px;border-color:#c9c4b7}
+.btn.danger{border-color:var(--red);color:var(--red)}
+
+/* Two-column Workspace + Main Shell */
+.shell{max-width:1680px;margin:0 auto;display:flex;align-items:stretch;min-height:calc(100vh - 76px)}
+.sidebar{width:320px;flex:0 0 320px;background:var(--sidebar-bg);border-right:1px solid var(--line);display:flex;flex-direction:column;height:calc(100vh - 76px);position:sticky;top:0}
+.sidebar.collapsed{display:none}
+.sb-head{padding:12px 12px 8px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.sb-title{font-weight:700;font-size:13.5px;display:flex;justify-content:space-between;align-items:center}
+.root-pills{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.root-pill{border:1px solid var(--line);background:#fff;color:var(--muted);padding:5px 4px;border-radius:6px;font-size:11.5px;cursor:pointer;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.root-pill.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.sb-search{display:flex;gap:5px}
+.sb-search input{flex:1;padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px;background:#fff}
+.sb-crumb{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)}
+.sb-crumb-path{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:rtl;text-align:left;flex:1}
+.sb-list{flex:1;overflow:auto;padding:6px 8px;display:flex;flex-direction:column;gap:2px}
+.ws-row{display:flex;align-items:center;gap:6px;padding:5px 6px;border-radius:6px;font-size:12.5px}
+.ws-row:hover{background:#ece8dc}
+.ws-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.ws-name.dir{font-weight:600;color:var(--ink)}
+.ws-meta{font-size:11px;color:var(--muted);white-space:nowrap}
+.ws-eye{border:none;background:none;cursor:pointer;color:var(--blue);font-size:12px;padding:1px 4px}
+.sb-basket{border-top:1px solid var(--line);background:#fff;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.basket-chips{display:flex;flex-wrap:wrap;gap:4px;max-height:84px;overflow:auto}
+.b-chip{display:inline-flex;align-items:center;gap:4px;background:var(--accent-soft);color:var(--accent);padding:2px 7px;border-radius:999px;font-size:11px;max-width:100%}
+.b-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:190px}
+.b-chip button{border:none;background:none;color:var(--red);cursor:pointer;font-weight:700;font-size:12px}
+
+.main-pane{flex:1;min-width:0;padding:16px 20px 80px}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:11px 13px}
+.stat .label{font-size:12px;color:var(--muted)}
+.stat .num{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+.stat .hint{font-size:11.5px;color:var(--muted);margin-top:2px}
+
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto}
+.tab{background:none;border:none;padding:9px 14px;font-size:13.5px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.tab.active{color:var(--ink);font-weight:600;border-bottom-color:var(--accent)}
+.panel{display:none}
+.panel.show{display:block}
+
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.toolbar input[type=search], .toolbar input[type=text], .toolbar select{padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);font-size:13px}
+.hint{font-size:12px;color:var(--muted)}
+
+.acct-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(335px,1fr));gap:12px}
+.acct-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.acct-card.disabled{opacity:.65}
+.acct-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.acct-title{font-weight:700;font-size:15px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.acct-email{font-size:12px;color:var(--muted);word-break:break-all}
+.meter-block{display:flex;flex-direction:column;gap:4px}
+.meter-row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.meter-row b{color:var(--ink);font-variant-numeric:tabular-nums}
+.bar{height:8px;background:#ece8dc;border-radius:999px;overflow:hidden}
+.bar > span{display:block;height:100%;border-radius:999px;transition:width .25s}
+.bar-ok{background:#136f63}
+.bar-warn{background:#c58b1a}
+.bar-crit{background:#b3402f}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-size:11px;padding:2px 7px;border-radius:6px;background:#f7f5ef;border:1px solid var(--line);color:var(--ink)}
+.chip.low{background:#fbeae4;color:var(--red);border-color:#f0c6bc}
+.card-actions{display:flex;gap:6px;flex-wrap:wrap;padding-top:6px;border-top:1px dashed var(--line)}
+
+.tablebox{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:680px}
+th{position:sticky;top:0;background:#faf8f2;font-size:12px;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:600}
+th.num,td.num{text-align:right}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#fbfaf6}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}
+.sub{font-size:11.5px;color:var(--muted)}
+.empty{text-align:center;color:var(--muted);padding:24px 10px !important}
+
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;white-space:nowrap;font-weight:500}
+.p-green{background:#e4f1ec;color:#136f63}
+.p-blue{background:#e8eef9;color:#2456a6}
+.p-amber{background:#f7efdd;color:#9a6b16}
+.p-red{background:#f9e7e3;color:#b3402f}
+.p-gray{background:#ededeb;color:#6b7280}
+.p-gold{background:#f9efd2;color:#8a5a00;border:1px solid #e6cf8b}
+
+.link{background:none;border:none;color:var(--blue);cursor:pointer;font-size:12.5px;padding:0 4px}
+.link.danger{color:var(--red)}
+.ops{white-space:nowrap}
+
+.card-box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:15px;margin-bottom:14px}
+.card-box h3{font-size:15px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:1100px){.two-col{grid-template-columns:1fr}}
+@media (max-width:920px){.tabs{flex-wrap:wrap;gap:4px;overflow-x:visible}.tab{padding:7px 10px;font-size:13px}}
+@media (max-width:860px){.shell{flex-direction:column}.sidebar{width:100%;flex:none;height:360px;position:static;border-right:none;border-bottom:1px solid var(--line)}}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+.form-grid label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:4px}
+.form-grid .full{grid-column:1/-1}
+.form-grid input,.form-grid select,.form-grid textarea{padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:13px;color:var(--ink);background:#fff;font-family:inherit}
+.form-grid input:focus,.form-grid select:focus,.form-grid textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+
+.tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:10px}
+.tool-card{border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:#faf8f3}
+.tool-card summary{cursor:pointer;font-size:11.5px;color:var(--blue);margin-top:6px}
+.code-pre{background:#1c1f1b;color:#e7ebe5;padding:10px 12px;border-radius:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;overflow:auto;max-height:300px;white-space:pre-wrap;word-break:break-word;margin-top:6px}
+
+.overlay{position:fixed;inset:0;background:rgba(28,28,24,.48);display:none;z-index:60;overflow:auto;padding:16px}
+.overlay.show{display:block}
+.modal{background:var(--card);max-width:740px;margin:4vh auto;border-radius:12px;padding:20px;box-shadow:0 18px 50px rgba(0,0,0,.22)}
+.modal h3{font-size:16.5px;margin-bottom:12px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+
+.batch-bar{position:sticky;bottom:14px;background:#20241f;color:#fff;padding:10px 14px;border-radius:10px;display:none;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:0 10px 30px rgba(0,0,0,.22);margin-top:12px;z-index:30}
+.batch-bar.show{display:flex}
+
+.toast{position:fixed;right:18px;bottom:18px;z-index:80;background:#20241f;color:#fff;padding:10px 16px;border-radius:9px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.2);display:none;max-width:440px}
+.toast.show{display:block}
+.toast.err{background:#b3402f}
+.check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:8px;margin-top:4px}
+.check-item{display:flex !important;flex-direction:row !important;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;font-size:12.5px !important;color:var(--ink) !important;cursor:pointer;background:#faf8f2}
+.guide-list{padding-left:18px;display:flex;flex-direction:column;gap:7px;font-size:12.5px}
+.guide-list a{color:var(--blue);text-decoration:underline;word-break:break-all}
+</style>
+</head>
+<body>
+<div class="top-wrap">
+  <div class="top">
+    <div class="brand">
+      <h1>NotebookLM Fleet · 工作区中枢与官方 API / MCP</h1>
+      <div class="sub">左侧全工作区直调 (本地工作目录 + 云盘资料库) · 多账号 Ultra / Pro / Free 算力调度 · 官方 Gemini Notebook v1 &amp; Remote MCP</div>
+    </div>
+    <div class="top-actions">
+      <button class="btn sm" onclick="toggleSidebar()">📁 切换左侧工作区</button>
+      <span class="save ok" id="connBadge">● 已连接本地服务</span>
+      <button class="btn primary" onclick="pollAll()">全部测额</button>
+      <button class="btn" onclick="syncAllNotebooks()">同步远程笔记本</button>
+      <button class="btn" onclick="openAccountModal()">＋ 新增账号</button>
+      <button class="btn" onclick="exportBackupJson()">导出备份</button>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+  <!-- LEFT PERSISTENT WHOLE-WORKSPACE SIDEBAR -->
+  <aside class="sidebar" id="wsSidebar">
+    <div class="sb-head">
+      <div class="sb-title">
+        <span>📂 工作目录与云盘浏览器</span>
+        <button class="btn sm" onclick="loadWorkspaceTree()">刷新</button>
+      </div>
+      <div class="root-pills" id="wsRootPills">
+        <button class="root-pill active" data-root="workspace" onclick="switchWsRoot('workspace')" title="本地工作根目录">工作目录</button>
+        <button class="root-pill" data-root="drive_library" onclick="switchWsRoot('drive_library')" title="云盘资料库根目录">云盘资料库</button>
+        <button class="root-pill" data-root="drive_hub" onclick="switchWsRoot('drive_hub')" title="NLM_Hub 中枢归档目录">NLM_Hub</button>
+      </div>
+      <div class="sb-search">
+        <input id="wsSearch" placeholder="搜索当前目录文件 (如 .md / .pdf)..." oninput="onWsSearchInput()">
+        <button class="btn sm" onclick="wsNavUp()" title="返回上一级">↑</button>
+      </div>
+      <div class="sb-crumb">
+        <span class="sb-crumb-path mono" id="wsBreadcrumb">加载中…</span>
+        <button class="link" onclick="switchWsRoot(STATE.ws.root)">根目录</button>
+      </div>
+    </div>
+    <div class="sb-list" id="wsList">
+      <div class="empty">正在加载工作目录…</div>
+    </div>
+    <div class="sb-basket">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <b style="font-size:12.5px">🧺 已选资料篮 (<span id="basketCount">0</span>)</b>
+        <button class="link danger" onclick="clearBasket()">清空</button>
+      </div>
+      <div class="basket-chips" id="basketChips"><span class="hint">勾选上方文件即可直接调取</span></div>
+      <button class="btn primary sm" onclick="sendBasketToLab()">⚡ 直接添加到笔记本 (官方API/MCP)</button>
+      <button class="btn sm" onclick="sendBasketToTopic()">📥 批量导入到学习主题</button>
+    </div>
+  </aside>
+
+  <!-- RIGHT MAIN PANEL -->
+  <main class="main-pane">
+    <div class="stats">
+      <div class="stat"><div class="label">平均 5 小时剩余</div><div class="num" id="kpi5h">—</div><div class="hint">健康账号均值</div></div>
+      <div class="stat"><div class="label">平均周额度剩余</div><div class="num" id="kpiWeek">—</div><div class="hint">滚动周上限余量</div></div>
+      <div class="stat"><div class="label">健康账号 / 总数</div><div class="num" id="kpiAccts">0 / 0</div><div class="hint" id="kpiOauthHint">官方 API 待配置</div></div>
+      <div class="stat"><div class="label">队列 / 运行中</div><div class="num" id="kpiTasks">0 / 0</div><div class="hint" id="kpiDoneHint">已完成 0 · 延时 0</div></div>
+      <div class="stat"><div class="label">主题 / 云盘产物</div><div class="num" id="kpiTopics">0 / 0</div><div class="hint">已归档至 NLM_Hub</div></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-panel="panelDash">额度总览</button>
+      <button class="tab" data-panel="panelLab">官方 API &amp; MCP 实验室</button>
+      <button class="tab" data-panel="panelTopics">主题与批量协作</button>
+      <button class="tab" data-panel="panelTasks">任务调度队列</button>
+      <button class="tab" data-panel="panelDrive">Google 云盘中枢</button>
+      <button class="tab" data-panel="panelLedger">账号台账与策略</button>
+    </div>
+
+    <!-- 1. Dashboard -->
+    <section class="panel show" id="panelDash">
+      <div class="toolbar">
+        <span class="hint">每个账号独立隔离 Chrome 与 notebooklm-py 会话；登录一次自动保活。也可直接点击「官方 API 授权」启用 Google 官方个人测试通道。</span>
+      </div>
+      <div class="acct-grid" id="acctCards"></div>
+    </section>
+
+    <!-- 2. Official API & MCP Lab -->
+    <section class="panel" id="panelLab">
+      <div class="card-box">
+        <h3>
+          <span>🔬 Section A · 2026-11 官方 Gemini Notebook API &amp; Remote MCP 实时探测</span>
+          <span style="display:flex;gap:6px;flex-wrap:wrap">
+            <span class="pill p-gray" id="labMcpPill">Official MCP: 未探测</span>
+            <span class="pill p-gray" id="labRestPill">Official REST: 未探测</span>
+            <span class="pill p-amber" id="labSecretPill">client_secret.json: 检查中</span>
+          </span>
+        </h3>
+        <div class="toolbar">
+          <button class="btn primary" id="btnProbeOfficial" onclick="probeOfficialLive()">🌐 探测官方 API &amp; Remote MCP 连通性</button>
+          <select id="labAccountSelect"></select>
+          <input type="text" id="labProjectId" placeholder="Google Cloud Project ID" style="min-width:200px">
+          <button class="btn" onclick="saveLabProjectId()">保存 Project ID</button>
+          <button class="btn" onclick="oauthSelectedLabAccount()">🔑 一键 OAuth 授权</button>
+          <button class="btn" onclick="runFullOfficialVerify(false)">✅ 运行官方 API + MCP 自检</button>
+          <button class="btn" onclick="runFullOfficialVerify(true)">🧪 含建本写入测试</button>
+        </div>
+        <div id="labProbeSummary" class="hint" style="margin-bottom:8px">点击上方「探测官方 API &amp; Remote MCP 连通性」可无需 OAuth 立即向 <span class="mono">https://notebook.googleapis.com/mcp</span> 发起真实 Streamable HTTP 握手并拉取官方 7 个 MCP 工具定义。</div>
+        <div id="labVerifyOutput"></div>
+        <div class="tool-grid" id="labOfficialToolsGrid"></div>
+
+        <details style="margin-top:12px">
+          <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--accent)">📄 在线上传 / 粘贴 client_secret.json（与 4 步申请直达链接）</summary>
+          <div class="two-col" style="margin-top:10px">
+            <div class="form-grid">
+              <label class="full">方式 1：选择本地下载的 client_secret.json 文件
+                <input type="file" id="labSecretFile" accept=".json,application/json" onchange="uploadSecretFile(this)">
+              </label>
+              <label class="full">方式 2：或直接粘贴 JSON 全文
+                <textarea id="labSecretText" rows="4" placeholder='{"installed":{"client_id":"...","client_secret":"..."}}'></textarea>
+              </label>
+              <div class="full" style="display:flex;justify-content:flex-end">
+                <button class="btn primary sm" onclick="uploadSecretText()">校验并保存 client_secret.json</button>
+              </div>
+            </div>
+            <ol class="guide-list">
+              <li><b>创建/选项目</b>：<a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">console.cloud.google.com/projectcreate</a></li>
+              <li><b>启用 Gemini Notebook API</b>：<a href="https://console.cloud.google.com/apis/library/notebook.googleapis.com" target="_blank" rel="noopener">console.cloud.google.com/apis/library/notebook.googleapis.com</a></li>
+              <li><b>OAuth 同意屏幕 + 添加 Test users</b>（把 6 个邮箱全加入）：<a href="https://console.cloud.google.com/auth/audience" target="_blank" rel="noopener">console.cloud.google.com/auth/audience</a></li>
+              <li><b>创建 Desktop app OAuth 客户端</b>：<a href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noopener">console.cloud.google.com/auth/clients</a></li>
+              <li><b>每个账号先打开网页端初始化一次</b>：<a href="https://notebooklm.google.com/" target="_blank" rel="noopener">notebooklm.google.com</a></li>
+            </ol>
+          </div>
+        </details>
+      </div>
+
+      <div class="card-box" id="labQuickAddBox">
+        <h3>
+          <span>⚡ Section B · 从左侧工作区 / 云盘直调资料添加到笔记本</span>
+          <span class="hint">支持 Official Remote MCP (URL/文本/MD) · Official REST v1 (含 200MB PDF 上传) · notebooklm-py</span>
+        </h3>
+        <div class="form-grid">
+          <label>执行通道
+            <select id="qaChannel">
+              <option value="auto">Auto (优先官方 REST / 其次 notebooklm-py)</option>
+              <option value="official_mcp">Official Remote MCP (notebook.googleapis.com/mcp)</option>
+              <option value="official_rest">Official REST API v1 (支持 PDF/媒体二进制上传)</option>
+              <option value="notebooklm_py">Channel 2 (notebooklm-py 全能通道)</option>
+            </select>
+          </label>
+          <label>目标笔记本
+            <div style="display:flex;gap:6px">
+              <select id="qaNotebookSelect" style="flex:1"><option value="">-- 可先拉取列表，或下方新建 --</option></select>
+              <button class="btn sm" onclick="fetchLabNotebooks()">拉取笔记本</button>
+              <button class="btn sm" onclick="fetchLabSources()">查来源</button>
+            </div>
+          </label>
+          <label>或直接新建笔记本（当未选已有笔记本时生效）
+            <input id="qaNewNbTitle" placeholder="例如: 2026_11_工作区资料精读">
+          </label>
+          <label>文本格式 (仅对文本/Markdown生效)
+            <select id="qaMimeType">
+              <option value="text/markdown">text/markdown</option>
+              <option value="text/plain">text/plain</option>
+            </select>
+          </label>
+          <div class="full">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:4px">来自左侧工作区已选文件 (<span id="qaStagedCount">0</span> 项)：</div>
+            <div class="basket-chips" id="qaStagedChips"><span class="hint">可在左侧工作目录勾选任意文件</span></div>
+          </div>
+          <label>追加网页 / YouTube 链接（每行一个，可选）
+            <textarea id="qaUrls" rows="3" placeholder="https://ai.google.dev/gemini-api/docs"></textarea>
+          </label>
+          <label>追加内联笔记内容（标题 + 正文，可选）
+            <input id="qaInlineTitle" placeholder="内联笔记标题（可选）" style="margin-bottom:5px">
+            <textarea id="qaInlineText" rows="2" placeholder="直接粘贴 Markdown 或文本..."></textarea>
+          </label>
+        </div>
+        <div style="margin-top:10px;display:flex;justify-content:flex-end;gap:8px">
+          <button class="btn primary" id="btnQuickAdd" onclick="submitQuickAdd()">🚀 立即添加到笔记本</button>
+        </div>
+        <div id="qaResultBox" style="margin-top:10px"></div>
+      </div>
+
+      <div class="two-col">
+        <div class="card-box">
+          <h3><span>🛠️ Section C · 官方 Remote MCP 交互式工具直调</span></h3>
+          <div class="form-grid">
+            <label>选择官方工具
+              <select id="mcpToolSelect" onchange="fillMcpToolTemplate()">
+                <option value="list_notebooks">list_notebooks</option>
+                <option value="create_notebook">create_notebook</option>
+                <option value="get_notebook">get_notebook</option>
+                <option value="update_notebook">update_notebook</option>
+                <option value="create_source">create_source</option>
+                <option value="get_source">get_source</option>
+                <option value="list_sources">list_sources</option>
+              </select>
+            </label>
+            <div style="display:flex;align-items:flex-end">
+              <button class="btn primary" onclick="runOfficialMcpToolCall()">▶ 执行 MCP tools/call</button>
+            </div>
+            <label class="full">Arguments JSON
+              <textarea id="mcpToolArgs" rows="5" class="mono">{}</textarea>
+            </label>
+          </div>
+          <pre class="code-pre" id="mcpCallResult" style="display:none"></pre>
+        </div>
+
+        <div class="card-box">
+          <h3>
+            <span>🤖 Section D · 本机 Antigravity Fleet MCP 状态</span>
+            <span class="pill p-gray" id="localMcpBadge">检查中…</span>
+          </h3>
+          <div class="hint mono" id="localMcpPath" style="margin-bottom:8px"></div>
+          <div class="chips" id="localMcpTools"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Topics & Batch -->
+    <section class="panel" id="panelTopics">
+      <div class="toolbar">
+        <button class="btn primary" onclick="openTopicModal()">＋ 新建学习主题</button>
+        <button class="btn" onclick="openBatchModal()">批量生成 Studio / Chat</button>
+        <button class="btn" onclick="syncAllNotebooks()">同步全部笔记本</button>
+        <span class="hint">勾选多个主题后，可直接批量派发 Audio / Video / Slides / Quiz / Chat，由调度器自动分摊至空闲账号。</span>
+      </div>
+      <div class="tablebox">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:36px"><input type="checkbox" id="chkAllTopics" onchange="toggleAllTopics(this.checked)"></th>
+              <th>主题名称 &amp; Drive 目录</th>
+              <th>主账号</th>
+              <th>协作模式</th>
+              <th class="num">来源 / 产物</th>
+              <th>已共享协作者</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="topicsBody"></tbody>
+        </table>
+      </div>
+      <div class="batch-bar" id="topicBatchBar">
+        <span id="batchCountText">已选择 0 个主题</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn primary sm" onclick="openBatchModal()">批量下发 Studio / Chat 任务</button>
+          <button class="btn sm" onclick="clearTopicSelection()">清空选择</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Task Queue -->
+    <section class="panel" id="panelTasks">
+      <div class="toolbar">
+        <select id="taskStatusFilter" onchange="loadTasks()">
+          <option value="all">全部状态</option>
+          <option value="pending">待调度 (pending)</option>
+          <option value="waiting_quota">等待额度刷新 (waiting_quota)</option>
+          <option value="running">执行中 (running)</option>
+          <option value="deferred_later">官方延时队列 (deferred_later)</option>
+          <option value="done">已完成 (done)</option>
+          <option value="failed">失败 (failed)</option>
+          <option value="canceled">已取消 (canceled)</option>
+        </select>
+        <button class="btn primary" onclick="triggerTick()">立即调度一轮</button>
+        <button class="btn" onclick="loadTasks()">刷新队列</button>
+        <span class="hint">同一账号严格串行并带 8–18 秒随机防风控间隔。</span>
+      </div>
+      <div class="tablebox">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th><th>主题 / 批次</th><th>动作类型</th><th>指派账号 / 通道</th>
+              <th class="num">预估 / 实测扣减</th><th>状态</th><th>结果 / 归档路径</th><th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="tasksBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 5. Drive Hub -->
+    <section class="panel" id="panelDrive">
+      <div class="toolbar">
+        <select id="driveTargetTopic"></select>
+        <button class="btn primary" onclick="ingestSelectedDriveFiles(false)">导入勾选文件到主题</button>
+        <button class="btn" onclick="ingestSelectedDriveFiles(true)">导入并生成学习套装(音频+测验+报告)</button>
+        <button class="btn" onclick="backupDriveNow()">立即备份数据库到云盘</button>
+        <button class="btn" onclick="loadDrive()">刷新云盘</button>
+      </div>
+      <div class="two-col">
+        <div class="card-box">
+          <h3><span>📥 01_Inbox 投递箱</span><span class="hint mono" id="hubRootLabel"></span></h3>
+          <div class="tablebox">
+            <table style="min-width:360px">
+              <thead><tr><th style="width:32px">选</th><th>文件名</th><th class="num">大小</th><th>修改时间</th></tr></thead>
+              <tbody id="inboxBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-box">
+          <h3>
+            <span>📚 云盘资料库</span>
+            <span style="display:flex;gap:6px"><button class="btn sm" onclick="navLibrary('')">根目录</button><button class="btn sm" onclick="navLibraryUp()">上一级</button></span>
+          </h3>
+          <div class="hint mono" id="libSubpathLabel" style="margin-bottom:8px">/</div>
+          <div class="tablebox">
+            <table style="min-width:360px">
+              <thead><tr><th style="width:32px">选</th><th>名称</th><th class="num">大小</th></tr></thead>
+              <tbody id="libraryBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="card-box">
+        <h3><span>📦 最近已归档产物</span></h3>
+        <div class="tablebox">
+          <table>
+            <thead><tr><th>主题</th><th>类型</th><th>标题</th><th>执行账号</th><th>云盘路径</th><th>时间</th></tr></thead>
+            <tbody id="artifactsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Accounts Ledger & Settings -->
+    <section class="panel" id="panelLedger">
+      <div class="card-box">
+        <h3>
+          <span>👥 账号台账（6 Ultra + 扩展 Pro / Plus / Free）</span>
+          <span style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn sm" onclick="importExistingProfiles()">导入本地已有 Profile</button>
+            <button class="btn primary sm" onclick="openAccountModal()">＋ 新增账号</button>
+          </span>
+        </h3>
+        <div class="tablebox">
+          <table>
+            <thead>
+              <tr>
+                <th>别名</th><th>邮箱</th><th>档位</th><th>上限(本/源)</th>
+                <th>Ch2 会话</th><th>Ch1 官方API</th><th>到期提醒</th><th>CDP端口</th><th>备注</th><th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="ledgerBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card-box">
+        <h3><span>⚙️ 分档调度、工作区路径与防风控策略</span></h3>
+        <div class="form-grid" id="settingsForm">
+          <label>调度策略
+            <select id="stTierPolicy">
+              <option value="conserve_ultra">conserve_ultra (重任务用Ultra，轻任务优先Pro/Free)</option>
+              <option value="ultra_first">ultra_first (全部优先Ultra)</option>
+              <option value="balanced">balanced (全池按窗口剩余均衡分配)</option>
+            </select>
+          </label>
+          <label>跨号协作模式
+            <select id="stCouplingMode">
+              <option value="shared_with_drive_fallback">主本共享 + Drive 镜像兜底 (推荐)</option>
+              <option value="shared">仅主本共享 Editor</option>
+              <option value="drive_mirror">仅 Google Drive 独立镜像</option>
+            </select>
+          </label>
+          <label>5h 额度安全余量 (%)<input type="number" id="stSafetyBuf" min="0" max="50"></label>
+          <label>轮询额度间隔 (分钟)<input type="number" id="stPollMin" min="2" max="120"></label>
+          <label>同号任务最小延迟 (秒)<input type="number" id="stDelayMin" min="2" max="120"></label>
+          <label>同号任务最大延迟 (秒)<input type="number" id="stDelayMax" min="2" max="300"></label>
+          <label>默认生成语言<input type="text" id="stLang"></label>
+          <label>整个工作目录路径 (左侧边栏默认根)<input type="text" id="stWorkspaceRoot"></label>
+          <label>Google Drive Hub 路径<input type="text" id="stHubRoot"></label>
+          <label>启用官方 API 主通道
+            <select id="stOfficialEnabled">
+              <option value="false">暂不启用（先用 notebooklm-py 全能通道）</option>
+              <option value="true">启用（笔记本与导入优先走官方 v1）</option>
+            </select>
+          </label>
+          <label class="full">官方 API/MCP 可选代理 (留空走系统/TUN)
+            <input type="text" id="stOfficialProxy" placeholder="例如 http://127.0.0.1:7890">
+          </label>
+        </div>
+        <div style="margin-top:12px;display:flex;justify-content:flex-end">
+          <button class="btn primary" onclick="saveStrategySettings()">保存全局策略</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalBody"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+let STATE = {
+  accounts: [], topics: [], tasks: [], settings: {}, dashboard: null,
+  officialStatus: null, officialTools: [],
+  libSubpath: "", selectedTopics: new Set(), selectedDriveFiles: new Set(),
+  ws: { root: "workspace", subpath: "", q: "", entries: [], currentPath: "" },
+  stagedFiles: new Map()
+};
+
+const OFFICIAL_TOOL_TEMPLATES = {
+  list_notebooks: { pageSize: 20 },
+  create_notebook: { notebook: { displayName: "Workspace Research Notebook" } },
+  get_notebook: { name: "notebooks/<NOTEBOOK_ID>" },
+  update_notebook: { notebook: { name: "notebooks/<NOTEBOOK_ID>", displayName: "New Name" }, updateMask: "display_name" },
+  create_source: { parent: "notebooks/<NOTEBOOK_ID>", source: { displayName: "My Doc", mimeType: "text/markdown", textContent: { content: "# Hello Notebook" } } },
+  get_source: { name: "notebooks/<NOTEBOOK_ID>/sources/<SOURCE_ID>" },
+  list_sources: { parent: "notebooks/<NOTEBOOK_ID>", pageSize: 20 }
+};
+
+function $(s){ return document.querySelector(s); }
+function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function toast(msg, isErr=false){
+  const el = $("#toast");
+  el.textContent = msg;
+  el.className = "toast show" + (isErr ? " err" : "");
+  clearTimeout(window._tt);
+  window._tt = setTimeout(() => el.classList.remove("show"), 3800);
+}
+async function api(path, opts={}){
+  const headers = opts.body instanceof FormData ? {} : {"Content-Type":"application/json"};
+  const res = await fetch(path, { headers, ...opts });
+  const data = await res.json().catch(() => ({}));
+  if(!res.ok) throw new Error(data.detail || ("HTTP " + res.status));
+  return data;
+}
+
+function fmtBytes(n){
+  if(!n) return "0 B";
+  if(n < 1024) return n + " B";
+  if(n < 1048576) return (n/1024).toFixed(1) + " KB";
+  return (n/1048576).toFixed(1) + " MB";
+}
+function fmtReset(iso){
+  if(!iso) return "未知";
+  const dt = new Date(iso);
+  if(isNaN(dt)) return iso;
+  const diffMs = dt.getTime() - Date.now();
+  const hhmm = dt.toLocaleTimeString("zh-CN", {hour:"2-digit", minute:"2-digit", hour12:false});
+  if(diffMs <= 0) return hhmm + " (即将刷新)";
+  const mins = Math.round(diffMs / 60000);
+  if(mins < 60) return `${hhmm} (${mins}m 后)`;
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return `${hhmm} (${h}h${m}m 后)`;
+}
+function daysLeftBadge(end){
+  if(!end) return '<span class="hint">—</span>';
+  const a = new Date(String(end).slice(0,10) + "T00:00:00");
+  const today = new Date(); today.setHours(0,0,0,0);
+  if(isNaN(a)) return esc(end);
+  const dl = Math.round((a - today) / 86400000);
+  if(dl < 0) return `<span class="pill p-red">已到期 ${-dl} 天</span>`;
+  if(dl === 0) return '<span class="pill p-red">今天到期</span>';
+  if(dl <= 7) return `<span class="pill p-amber">${dl} 天</span>`;
+  return `<span class="pill p-green">${dl} 天</span>`;
+}
+function authPill(st){
+  const map = { ok:["已就绪","p-green"], unauthenticated:["待登录","p-amber"], expired:["已过期","p-red"], error:["异常","p-red"], not_configured:["未配置","p-gray"] };
+  const [txt, cls] = map[st] || [st||"未知","p-gray"];
+  return `<span class="pill ${cls}">${esc(txt)}</span>`;
+}
+function tierPill(tier){
+  const map = { ultra:["ULTRA","p-gold"], pro:["PRO","p-blue"], plus:["PLUS","p-green"], free:["FREE","p-gray"] };
+  const [txt, cls] = map[tier] || [tier,"p-gray"];
+  return `<span class="pill ${cls}">${txt}</span>`;
+}
+function taskPill(st){
+  const map = {
+    pending:["待调度","p-blue"], waiting_quota:["等额度","p-amber"], running:["执行中","p-green"],
+    deferred_later:["官方延时","p-amber"], done:["已完成","p-green"], failed:["失败","p-red"], canceled:["已取消","p-gray"]
+  };
+  const [txt, cls] = map[st] || [st,"p-gray"];
+  return `<span class="pill ${cls}">${txt}</span>`;
+}
+function barColor(rem){
+  if(rem == null) return "bar-ok";
+  if(rem <= 10) return "bar-crit";
+  if(rem <= 30) return "bar-warn";
+  return "bar-ok";
+}
+
+function toggleSidebar(){
+  $("#wsSidebar").classList.toggle("collapsed");
+}
+
+function switchTab(panelId){
+  document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.panel === panelId));
+  document.querySelectorAll(".panel").forEach(p => p.classList.toggle("show", p.id === panelId));
+  if(panelId === "panelDrive") loadDrive();
+  if(panelId === "panelLab") loadOfficialStatus();
+}
+
+/* ================= Left Whole-Workspace Sidebar ================= */
+async function switchWsRoot(rootKey){
+  STATE.ws.root = rootKey;
+  STATE.ws.subpath = "";
+  STATE.ws.q = "";
+  $("#wsSearch").value = "";
+  document.querySelectorAll(".root-pill").forEach(p => p.classList.toggle("active", p.dataset.root === rootKey));
+  await loadWorkspaceTree();
+}
+function onWsSearchInput(){
+  clearTimeout(window._wsSearchT);
+  window._wsSearchT = setTimeout(() => {
+    STATE.ws.q = $("#wsSearch").value.trim();
+    loadWorkspaceTree();
+  }, 240);
+}
+function wsNavUp(){
+  if(!STATE.ws.subpath) return;
+  const parts = STATE.ws.subpath.split(/[\\/]+/).filter(Boolean);
+  parts.pop();
+  STATE.ws.subpath = parts.join("/");
+  loadWorkspaceTree();
+}
+function wsNavDir(relPath){
+  STATE.ws.subpath = relPath;
+  STATE.ws.q = "";
+  $("#wsSearch").value = "";
+  loadWorkspaceTree();
+}
+let _wsReqSeq = 0;
+let _wsAbort = null;
+async function loadWorkspaceTree(){
+  const listEl = $("#wsList");
+  const seq = ++_wsReqSeq;
+  if(_wsAbort){ try{ _wsAbort.abort(); }catch(_){} }
+  _wsAbort = new AbortController();
+  listEl.innerHTML = '<div class="empty">正在读取目录…</div>';
+  try{
+    const url = `/api/workspace/tree?root=${encodeURIComponent(STATE.ws.root)}&subpath=${encodeURIComponent(STATE.ws.subpath)}&q=${encodeURIComponent(STATE.ws.q)}`;
+    const data = await api(url, { signal: _wsAbort.signal });
+    if(seq !== _wsReqSeq) return;
+    STATE.ws.entries = data.entries || [];
+    STATE.ws.currentPath = data.current_path || data.root_path || "";
+    $("#wsBreadcrumb").textContent = STATE.ws.currentPath;
+    if(!data.exists){
+      listEl.innerHTML = '<div class="empty">目录不存在或云盘尚未挂载</div>';
+      return;
+    }
+    if(!STATE.ws.entries.length){
+      listEl.innerHTML = '<div class="empty">当前目录为空或无匹配文件</div>';
+      return;
+    }
+    listEl.innerHTML = STATE.ws.entries.map(e => {
+      const encRel = encodeURIComponent(e.relative_path);
+      const encPath = encodeURIComponent(e.path);
+      const encName = encodeURIComponent(e.name);
+      if(e.is_dir){
+        return `<div class="ws-row">
+          <span style="width:16px;text-align:center">📁</span>
+          <span class="ws-name dir" title="${esc(e.relative_path)}" onclick="wsNavDir(decodeURIComponent('${encRel}'))">${esc(e.name)}</span>
+          <span class="ws-meta">目录</span>
+        </div>`;
+      }
+      const checked = STATE.stagedFiles.has(e.path) ? "checked" : "";
+      return `<div class="ws-row">
+        <input type="checkbox" ${checked} onchange="toggleStageFile(decodeURIComponent('${encPath}'), decodeURIComponent('${encName}'), decodeURIComponent('${encRel}'), this.checked)">
+        <span class="ws-name" title="${esc(e.relative_path)}" onclick="previewWsFile(decodeURIComponent('${encRel}'))">📄 ${esc(e.name)}</span>
+        <span class="ws-meta">${fmtBytes(e.size_bytes)}</span>
+        <button class="ws-eye" title="预览内容" onclick="previewWsFile(decodeURIComponent('${encRel}'))">预览</button>
+      </div>`;
+    }).join("");
+  }catch(err){
+    if(err && err.name === "AbortError") return;
+    if(seq !== _wsReqSeq) return;
+    listEl.innerHTML = `<div class="empty">${esc(err.message)}</div>`;
+  }
+}
+
+function toggleStageFile(fullPath, name, relPath, checked){
+  if(checked){
+    STATE.stagedFiles.set(fullPath, { path: fullPath, name, relative_path: relPath, root: STATE.ws.root });
+  }else{
+    STATE.stagedFiles.delete(fullPath);
+  }
+  renderBasket();
+}
+function removeStagedFile(fullPath){
+  STATE.stagedFiles.delete(fullPath);
+  renderBasket();
+  loadWorkspaceTree();
+}
+function clearBasket(){
+  STATE.stagedFiles.clear();
+  renderBasket();
+  loadWorkspaceTree();
+}
+function renderBasket(){
+  const items = Array.from(STATE.stagedFiles.values());
+  $("#basketCount").textContent = items.length;
+  const chipHtml = items.length
+    ? items.map(f => `<span class="b-chip" title="${esc(f.path)}"><span>${esc(f.name)}</span><button onclick="removeStagedFile(decodeURIComponent('${encodeURIComponent(f.path)}'))">×</button></span>`).join("")
+    : '<span class="hint">勾选上方文件即可直接调取</span>';
+  $("#basketChips").innerHTML = chipHtml;
+
+  const qaCount = $("#qaStagedCount");
+  const qaChips = $("#qaStagedChips");
+  if(qaCount) qaCount.textContent = items.length;
+  if(qaChips) qaChips.innerHTML = items.length ? chipHtml : '<span class="hint">可在左侧工作目录勾选任意文件</span>';
+}
+
+async function previewWsFile(relPath){
+  try{
+    const d = await api(`/api/workspace/preview?root=${encodeURIComponent(STATE.ws.root)}&subpath=${encodeURIComponent(relPath)}`);
+    const encPath = encodeURIComponent(d.full_path);
+    const encName = encodeURIComponent(d.name);
+    const encRel = encodeURIComponent(relPath);
+    showModal(`<h3>📄 文件预览 · ${esc(d.name)}</h3>
+      <div class="hint mono" style="margin-bottom:8px">${esc(d.full_path)} · ${fmtBytes(d.size_bytes)} · ${esc(d.mime_type)} ${d.truncated ? "(仅显示前 32KB)" : ""}</div>
+      <pre class="code-pre" style="max-height:420px">${esc(d.content)}</pre>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">关闭</button>
+        <button class="btn primary" onclick="toggleStageFile(decodeURIComponent('${encPath}'), decodeURIComponent('${encName}'), decodeURIComponent('${encRel}'), true); loadWorkspaceTree(); closeModal(); toast('已加入选材篮')">＋ 加入选材篮</button>
+      </div>`);
+  }catch(e){ toast(e.message, true); }
+}
+
+function sendBasketToLab(){
+  if(!STATE.stagedFiles.size) return toast("请先在左侧工作目录勾选至少 1 个文件", true);
+  switchTab("panelLab");
+  renderBasket();
+  $("#labQuickAddBox").scrollIntoView({ behavior:"smooth", block:"start" });
+  toast(`已携带 ${STATE.stagedFiles.size} 份资料进入官方 API & MCP 实验室`);
+}
+
+function sendBasketToTopic(){
+  if(!STATE.stagedFiles.size) return toast("请先在左侧工作目录勾选至少 1 个文件", true);
+  if(!STATE.topics.length){
+    switchTab("panelTopics");
+    return toast("请先新建一个学习主题后再导入", true);
+  }
+  const opts = STATE.topics.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join("");
+  showModal(`<h3>📥 导入 ${STATE.stagedFiles.size} 份工作区资料到学习主题</h3>
+    <div class="form-grid">
+      <label class="full">选择目标主题
+        <select id="basketTopicSel">${opts}</select>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn primary" onclick="confirmBasketToTopic()">加入导入队列</button>
+    </div>`);
+}
+async function confirmBasketToTopic(){
+  const topicId = Number($("#basketTopicSel").value);
+  const files = Array.from(STATE.stagedFiles.keys());
+  try{
+    const r = await api(`/api/topics/${topicId}/ingest`, {method:"POST", body:JSON.stringify({file_paths:files})});
+    closeModal();
+    await refreshAll();
+    toast(`已排入 ${r.created_count} 个导入任务`);
+  }catch(e){ toast(e.message, true); }
+}
+
+/* ================= Core Data Refresh ================= */
+async function refreshAll(){
+  try{
+    const [dash, accts, topics, tasks] = await Promise.all([
+      api("/api/dashboard"), api("/api/accounts"), api("/api/topics"), api("/api/tasks?limit=120")
+    ]);
+    STATE.dashboard = dash;
+    STATE.accounts = accts.accounts || [];
+    STATE.topics = topics.topics || [];
+    STATE.tasks = tasks.tasks || [];
+    STATE.settings = dash.settings || {};
+    $("#connBadge").textContent = "● 已连接本地服务";
+    $("#connBadge").className = "save ok";
+    renderDashboard();
+    renderTopics();
+    renderTasks();
+    renderLedgerAndSettings();
+    syncLabSelectors();
+  }catch(e){
+    $("#connBadge").textContent = "● 连接异常";
+    $("#connBadge").className = "save warn";
+    toast("刷新失败: " + e.message, true);
+  }
+}
+
+function renderDashboard(){
+  const k = (STATE.dashboard && STATE.dashboard.kpis) || {};
+  $("#kpi5h").textContent = k.avg_five_hour_remaining_pct != null ? k.avg_five_hour_remaining_pct + "%" : "待测额";
+  $("#kpiWeek").textContent = k.avg_weekly_remaining_pct != null ? k.avg_weekly_remaining_pct + "%" : "待测额";
+  $("#kpiAccts").textContent = `${k.accounts_healthy || 0} / ${k.accounts_total || 0}`;
+  $("#kpiTasks").textContent = `${k.pending_tasks || 0} / ${k.running_tasks || 0}`;
+  $("#kpiDoneHint").textContent = `已完成 ${k.done_tasks || 0} · 延时 ${k.deferred_tasks || 0}`;
+  $("#kpiTopics").textContent = `${k.topics_count || 0} / ${k.artifacts_count || 0}`;
+  const off = (STATE.dashboard && STATE.dashboard.official_api) || {};
+  $("#kpiOauthHint").textContent = off.enabled && off.project_id ? `官方 API 已启用 (${off.project_id})` : "官方 API 待配置 (Ch2/Lab 可用)";
+
+  const grid = $("#acctCards");
+  if(!STATE.accounts.length){
+    grid.innerHTML = '<div class="card-box">暂无账号，请点击右上角「＋ 新增账号」。</div>';
+    return;
+  }
+  grid.innerHTML = STATE.accounts.map(a => {
+    const fUsed = a.five_hour_used_pct != null ? Number(a.five_hour_used_pct).toFixed(1) : null;
+    const fRem = a.five_hour_remaining_pct != null ? Number(a.five_hour_remaining_pct).toFixed(1) : null;
+    const wUsed = a.weekly_used_pct != null ? Number(a.weekly_used_pct).toFixed(1) : null;
+    const wRem = a.weekly_remaining_pct != null ? Number(a.weekly_remaining_pct).toFixed(1) : null;
+    const keyKinds = ["audio_overview","video_overview","slides","quiz","reports","qna"];
+    const actionChips = (a.actions || []).filter(x => keyKinds.includes(x.kind)).map(x => {
+      const label = {audio_overview:"音频",video_overview:"视频",slides:"PPT",quiz:"测验",reports:"报告",qna:"对话"}[x.kind] || x.kind;
+      const cost = x.estimated_cost_percent != null ? `${Number(x.estimated_cost_percent).toFixed(1)}%` : "?";
+      const cls = x.has_sufficient_quota ? "chip" : "chip low";
+      return `<span class="${cls}">${label}: ${cost}${x.remaining_deferred_artifact_generations ? " · 延时"+x.remaining_deferred_artifact_generations : ""}</span>`;
+    }).join("");
+
+    return `<div class="acct-card ${a.enabled ? "" : "disabled"}">
+      <div class="acct-head">
+        <div>
+          <div class="acct-title">
+            <span>${esc(a.alias)}</span>
+            ${tierPill(a.tier)}
+            ${a.is_hub_master ? '<span class="pill p-green">Drive 主盘</span>' : ""}
+          </div>
+          <div class="acct-email">${esc(a.email)}</div>
+        </div>
+        <div style="text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+          <div>Ch2 ${authPill(a.nlm_auth_status)}</div>
+          <div>Ch1 ${authPill(a.oauth_status_live || a.official_oauth_status)}</div>
+        </div>
+      </div>
+
+      <div class="meter-block">
+        <div class="meter-row">
+          <span>5 小时窗口${fRem != null ? ` · 剩余 <b>${fRem}%</b>` : " · 尚未测额"}</span>
+          <span>${fUsed != null ? `已用 ${fUsed}% · ` : ""}重置: ${fmtReset(a.five_hour_resets_at)}</span>
+        </div>
+        <div class="bar"><span class="${barColor(fRem)}" style="width:${fRem != null ? Math.max(2, Math.min(100, fRem)) : 0}%"></span></div>
+      </div>
+
+      <div class="meter-block">
+        <div class="meter-row">
+          <span>周窗口上限${wRem != null ? ` · 剩余 <b>${wRem}%</b>` : " · 尚未测额"}</span>
+          <span>${wUsed != null ? `已用 ${wUsed}% · ` : ""}重置: ${fmtReset(a.weekly_resets_at)}</span>
+        </div>
+        <div class="bar"><span class="${barColor(wRem)}" style="width:${wRem != null ? Math.max(2, Math.min(100, wRem)) : 0}%"></span></div>
+      </div>
+
+      ${actionChips ? `<div class="chips">${actionChips}</div>` : `<div class="hint">限制: ${a.notebook_limit || 500} 本 / ${a.source_limit || 600} 源 · 登录后点「测额」获取精确算力成本</div>`}
+
+      <div class="card-actions">
+        <button class="btn primary sm" onclick="openCh2LoginModal(${a.id})">一键登录会话</button>
+        <button class="btn sm" onclick="importChromeCookies(${a.id})">提取Chrome Cookie</button>
+        <button class="btn sm" onclick="pollOne(${a.id})">测额</button>
+        <button class="btn sm" onclick="openChrome(${a.id})">弹出专属Chrome</button>
+        <button class="btn sm" onclick="oauthOfficial(${a.id})">官方API授权</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ================= Official API & MCP Lab ================= */
+function syncLabSelectors(){
+  const sel = $("#labAccountSelect");
+  if(sel){
+    const prev = sel.value;
+    sel.innerHTML = STATE.accounts.map(a => `<option value="${a.id}">${esc(a.alias)} (${esc(a.email)})</option>`).join("");
+    if(prev) sel.value = prev;
+  }
+  const pidInput = $("#labProjectId");
+  if(pidInput && !pidInput.value && STATE.settings.official_api_project_id){
+    pidInput.value = STATE.settings.official_api_project_id;
+  }
+}
+
+function renderOfficialToolsGrid(tools){
+  $("#labOfficialToolsGrid").innerHTML = (tools || []).map(t => {
+    const ann = t.annotations || {};
+    const ro = ann.readOnlyHint ? '<span class="pill p-blue">只读</span>' : '<span class="pill p-amber">写入</span>';
+    return `<div class="tool-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+        <b class="mono">${esc(t.name)}</b>${ro}
+      </div>
+      <div class="sub" style="margin-top:4px">${esc(t.description)}</div>
+      <details><summary>查看 JSON Input Schema</summary><pre class="code-pre">${esc(JSON.stringify(t.inputSchema, null, 2))}</pre></details>
+    </div>`;
+  }).join("");
+}
+
+async function loadOfficialStatus(){
+  try{
+    const st = await api("/api/official/status");
+    STATE.officialStatus = st;
+    const sp = $("#labSecretPill");
+    if(st.client_secret_present){
+      sp.textContent = "client_secret.json: 已就绪";
+      sp.className = "pill p-green";
+    }else{
+      sp.textContent = "client_secret.json: 未放置";
+      sp.className = "pill p-amber";
+    }
+    if(st.project_id && !$("#labProjectId").value) $("#labProjectId").value = st.project_id;
+    if(!STATE.officialTools.length && st.last_verified_mcp_probe && Array.isArray(st.last_verified_mcp_probe.tools) && st.last_verified_mcp_probe.tools.length){
+      const snap = st.last_verified_mcp_probe;
+      STATE.officialTools = snap.tools;
+      $("#labProbeSummary").innerHTML = `<b>已加载上次在线探测验证快照</b> (<span class="mono">${esc(snap.captured_at || "")}</span> · 协议 <span class="mono">${esc(snap.protocol_version || "")}</span> · ${snap.tool_count || snap.tools.length} 个官方工具) — 点击上方按钮可重新在线探测`;
+      renderOfficialToolsGrid(STATE.officialTools);
+    }
+    const lm = st.local_mcp || {};
+    const lmb = $("#localMcpBadge");
+    lmb.textContent = lm.registered ? "已注册到 Antigravity" : "未注册";
+    lmb.className = "pill " + (lm.registered ? "p-green" : "p-amber");
+    $("#localMcpPath").textContent = lm.config_path || "";
+    $("#localMcpTools").innerHTML = (lm.tools || []).map(t => `<span class="chip mono">${esc(t)}</span>`).join("");
+  }catch(e){ toast(e.message, true); }
+}
+
+async function probeOfficialLive(){
+  const btn = $("#btnProbeOfficial");
+  btn.disabled = true; btn.textContent = "探测中…";
+  try{
+    const res = await api("/api/official/probe", {method:"POST"});
+    const mcp = res.mcp || {};
+    const rest = res.rest || {};
+    const mp = $("#labMcpPill"), rp = $("#labRestPill");
+    mp.textContent = mcp.reachable ? `Official MCP: HTTP ${mcp.status_code} (${mcp.latency_ms}ms · ${mcp.tool_count}工具)` : "Official MCP: 不可达";
+    mp.className = "pill " + (mcp.reachable ? "p-green" : "p-red");
+    rp.textContent = rest.reachable ? `Official REST: HTTP ${rest.status_code} (${rest.latency_ms}ms)` : "Official REST: 不可达";
+    rp.className = "pill " + (rest.reachable ? "p-green" : "p-red");
+
+    STATE.officialTools = mcp.tools || [];
+    $("#labProbeSummary").innerHTML = mcp.reachable
+      ? `<b>握手成功：</b> 协议版本 <span class="mono">${esc(mcp.protocol_version)}</span> · 服务端 <span class="mono">${esc(JSON.stringify(mcp.server_info))}</span> · 端点 <span class="mono">${esc(mcp.mcp_url)}</span>`
+      : `<span style="color:var(--red)">探测失败: ${esc(mcp.error || rest.detail)}</span>`;
+
+    renderOfficialToolsGrid(STATE.officialTools);
+    if(mcp.reachable){
+      toast(`探测完成：发现 ${STATE.officialTools.length} 个官方 MCP 工具`);
+    }else{
+      toast("官方 MCP 探测失败: " + (mcp.error || rest.detail || "连接超时"), true);
+    }
+  }catch(e){ toast("探测失败: " + e.message, true); }
+  finally{ btn.disabled = false; btn.textContent = "🌐 探测官方 API & Remote MCP 连通性"; }
+}
+
+async function saveLabProjectId(){
+  const pid = $("#labProjectId").value.trim();
+  try{
+    await api("/api/settings", {method:"PUT", body:JSON.stringify({updates:{official_api_project_id: pid, official_api_enabled: pid ? "true" : "false"}})});
+    await refreshAll();
+    toast("Project ID 已保存并开启官方通道路由");
+  }catch(e){ toast(e.message, true); }
+}
+async function oauthSelectedLabAccount(){
+  const id = Number($("#labAccountSelect").value);
+  if(!id) return toast("请选择账号", true);
+  await oauthOfficial(id);
+}
+async function uploadSecretFile(input){
+  const f = input.files && input.files[0];
+  if(!f) return;
+  const fd = new FormData();
+  fd.append("file", f);
+  try{
+    const r = await api("/api/official/upload-client-secret", {method:"POST", body:fd});
+    if(r.project_id && !$("#labProjectId").value) $("#labProjectId").value = r.project_id;
+    await Promise.all([loadOfficialStatus(), refreshAll()]);
+    toast(`client_secret.json (${r.type}) 已保存: ${r.client_id_preview}`);
+  }catch(e){ toast(e.message, true); }
+}
+async function uploadSecretText(){
+  const content = $("#labSecretText").value.trim();
+  if(!content) return toast("请粘贴 JSON 内容", true);
+  try{
+    const r = await api("/api/official/upload-client-secret", {method:"POST", body:JSON.stringify({content})});
+    $("#labSecretText").value = "";
+    if(r.project_id && !$("#labProjectId").value) $("#labProjectId").value = r.project_id;
+    await Promise.all([loadOfficialStatus(), refreshAll()]);
+    toast(`client_secret.json (${r.type}) 已校验并保存`);
+  }catch(e){ toast(e.message, true); }
+}
+
+async function runFullOfficialVerify(createTest){
+  const id = Number($("#labAccountSelect").value);
+  const pid = $("#labProjectId").value.trim();
+  if(!id) return toast("请选择账号", true);
+  $("#labVerifyOutput").innerHTML = '<div class="hint" style="margin-top:8px">正在探测官方 Remote MCP、REST v1 及账号凭据状态…</div>';
+  try{
+    const r = await api("/api/official/rest/verify", {
+      method:"POST",
+      body:JSON.stringify({account_id: id, project_id: pid || null, create_test_notebook: createTest})
+    });
+    const rows = (r.steps || []).map(s => {
+      const badge = s.status === "pass" ? '<span class="pill p-green">PASS</span>' : s.status === "warn" ? '<span class="pill p-amber">WARN</span>' : '<span class="pill p-red">FAIL</span>';
+      return `<tr><td><b>${esc(s.step)}</b></td><td>${badge}</td><td class="num mono">${s.latency_ms != null ? s.latency_ms + "ms" : "—"}</td><td style="word-break:break-all">${esc(s.detail)}</td></tr>`;
+    }).join("");
+    $("#labVerifyOutput").innerHTML = `<div class="tablebox" style="margin-top:8px"><table style="min-width:520px"><thead><tr><th>检查项</th><th>结果</th><th class="num">耗时</th><th>详情</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    toast(r.ready ? "官方 API + MCP 全部就绪！" : "已生成自检报告，请查看黄色/红色待配置项");
+  }catch(e){ toast(e.message, true); }
+}
+
+async function fetchLabNotebooks(){
+  const id = Number($("#labAccountSelect").value);
+  const ch = $("#qaChannel").value;
+  if(!id) return toast("请选择账号", true);
+  try{
+    const r = await api(`/api/official/notebooks?account_id=${id}&channel=${encodeURIComponent(ch)}`);
+    const sel = $("#qaNotebookSelect");
+    const opts = ['<option value="">-- 新建笔记本（使用下方名称）--</option>'].concat(
+      (r.notebooks || []).map(nb => `<option value="${esc(nb.resource_name || nb.id)}">${esc(nb.title)} [${esc(nb.id)}]</option>`)
+    );
+    sel.innerHTML = opts.join("");
+    toast(`已通过 ${r.channel_used} 拉取 ${(r.notebooks||[]).length} 个笔记本`);
+  }catch(e){ toast(e.message, true); }
+}
+
+async function fetchLabSources(){
+  const id = Number($("#labAccountSelect").value);
+  const nb = $("#qaNotebookSelect").value;
+  const ch = $("#qaChannel").value;
+  if(!id || !nb) return toast("请先选择账号并选中一个笔记本", true);
+  try{
+    const r = await api(`/api/official/sources?account_id=${id}&notebook_id=${encodeURIComponent(nb)}&channel=${encodeURIComponent(ch)}`);
+    const rows = (r.sources || []).map(s => `<tr><td class="mono">${esc(s.displayName || s.title || s.name)}</td><td><span class="pill p-blue">${esc(s.state || s.status || "OK")}</span></td><td class="mono">${esc(s.name || s.id)}</td></tr>`).join("");
+    $("#qaResultBox").innerHTML = `<div class="tablebox"><table style="min-width:460px"><thead><tr><th>来源名称</th><th>状态</th><th>资源标识</th></tr></thead><tbody>${rows || '<tr><td colspan="3" class="empty">该笔记本暂无来源</td></tr>'}</tbody></table></div>`;
+  }catch(e){ toast(e.message, true); }
+}
+
+async function submitQuickAdd(){
+  const id = Number($("#labAccountSelect").value);
+  const ch = $("#qaChannel").value;
+  const nbId = $("#qaNotebookSelect").value;
+  const newTitle = $("#qaNewNbTitle").value.trim();
+  const files = Array.from(STATE.stagedFiles.keys());
+  const urls = $("#qaUrls").value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  const inlineTitle = $("#qaInlineTitle").value.trim();
+  const inlineText = $("#qaInlineText").value.trim();
+  const mimeType = $("#qaMimeType").value;
+
+  if(!id) return toast("请选择账号", true);
+  if(!nbId && !newTitle) return toast("请选择现有笔记本，或填写新笔记本名称", true);
+  if(!files.length && !urls.length && !inlineText) return toast("请先从左侧工作区勾选文件，或输入 URL / 文本", true);
+
+  const btn = $("#btnQuickAdd");
+  btn.disabled = true; btn.textContent = "正在写入笔记本…";
+  try{
+    const r = await api("/api/official/quick-add", {
+      method:"POST",
+      body:JSON.stringify({
+        account_id: id,
+        notebook_id: nbId || null,
+        new_notebook_title: nbId ? null : newTitle,
+        channel: ch,
+        file_paths: files,
+        urls: urls,
+        inline_title: inlineTitle || null,
+        inline_text: inlineText || null,
+        mime_type: mimeType
+      })
+    });
+    const rows = (r.results || []).map(x => `<tr>
+      <td>${esc(x.item)}</td>
+      <td class="mono">${esc(x.channel)}</td>
+      <td>${x.ok ? `<span class="pill p-green">${esc(x.state || "OK")}</span>` : '<span class="pill p-red">失败</span>'}</td>
+      <td class="mono" style="word-break:break-all">${esc(x.source_name || x.error || "")}</td>
+    </tr>`).join("");
+    $("#qaResultBox").innerHTML = `<div class="hint" style="margin-bottom:6px">目标笔记本: <b class="mono">${esc(r.notebook_id)}</b> · 通道: <b class="mono">${esc(r.channel_used)}</b> · 成功 ${r.success_count} / 失败 ${r.error_count}</div>
+      <div class="tablebox"><table style="min-width:460px"><thead><tr><th>资料项</th><th>通道</th><th>状态</th><th>资源名 / 错误</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    toast(`写入完成：成功 ${r.success_count} 项`);
+  }catch(e){ toast(e.message, true); }
+  finally{ btn.disabled = false; btn.textContent = "🚀 立即添加到笔记本"; }
+}
+
+function fillMcpToolTemplate(){
+  const name = $("#mcpToolSelect").value;
+  $("#mcpToolArgs").value = JSON.stringify(OFFICIAL_TOOL_TEMPLATES[name] || {}, null, 2);
+}
+async function runOfficialMcpToolCall(){
+  const id = Number($("#labAccountSelect").value);
+  const pid = $("#labProjectId").value.trim();
+  const toolName = $("#mcpToolSelect").value;
+  let args = {};
+  try{ args = JSON.parse($("#mcpToolArgs").value || "{}"); }
+  catch(e){ return toast("Arguments JSON 格式错误: " + e.message, true); }
+  try{
+    const res = await api("/api/official/mcp/call", {
+      method:"POST",
+      body:JSON.stringify({account_id:id, project_id:pid || null, tool_name:toolName, arguments:args})
+    });
+    const pre = $("#mcpCallResult");
+    pre.style.display = "block";
+    pre.textContent = JSON.stringify(res, null, 2);
+    toast(res.ok ? `MCP ${toolName} 调用成功` : `MCP 调用返回错误`);
+  }catch(e){ toast(e.message, true); }
+}
+
+/* ================= Existing Tabs Rendering & Actions ================= */
+function renderTopics(){
+  const tb = $("#topicsBody");
+  const selDrive = $("#driveTargetTopic");
+  if(selDrive){
+    const prev = selDrive.value;
+    selDrive.innerHTML = STATE.topics.length
+      ? STATE.topics.map(t => `<option value="${t.id}">导入目标主题: ${esc(t.name)}</option>`).join("")
+      : '<option value="">请先在「主题与批量协作」新建一个主题</option>';
+    if(prev) selDrive.value = prev;
+  }
+
+  if(!STATE.topics.length){
+    tb.innerHTML = '<tr><td colspan="7" class="empty">暂无学习主题 — 点击「＋ 新建学习主题」会自动在 Google Drive 创建对应目录</td></tr>';
+    updateBatchBar();
+    return;
+  }
+  tb.innerHTML = STATE.topics.map(t => {
+    const chk = STATE.selectedTopics.has(t.id) ? "checked" : "";
+    const sharedTxt = (t.shared_emails || []).length ? esc(t.shared_emails.join(", ")) : '<span class="hint">未共享</span>';
+    return `<tr>
+      <td><input type="checkbox" ${chk} onchange="toggleTopic(${t.id}, this.checked)"></td>
+      <td><b>${esc(t.name)}</b><div class="sub mono">${esc(t.drive_folder_path)}</div></td>
+      <td>${esc(t.master_alias || "自动")}</td>
+      <td><span class="pill p-blue">${esc(t.coupling_mode)}</span></td>
+      <td class="num">${t.source_count || 0} 源 / ${t.artifact_count || 0} 产物</td>
+      <td style="max-width:200px;word-break:break-all;font-size:12px">${sharedTxt}</td>
+      <td class="ops">
+        <button class="link" onclick="openIngestModal(${t.id})">导入链接/文本</button>
+        <button class="link" onclick="shareTopicAll(${t.id})">跨号共享</button>
+        <button class="link" onclick="openBatchModal(${t.id})">生成</button>
+        <button class="link danger" onclick="deleteTopic(${t.id})">删除</button>
+      </td>
+    </tr>`;
+  }).join("");
+  updateBatchBar();
+}
+
+function toggleTopic(id, checked){ if(checked) STATE.selectedTopics.add(id); else STATE.selectedTopics.delete(id); updateBatchBar(); }
+function toggleAllTopics(checked){ STATE.selectedTopics.clear(); if(checked) STATE.topics.forEach(t => STATE.selectedTopics.add(t.id)); renderTopics(); }
+function clearTopicSelection(){ STATE.selectedTopics.clear(); $("#chkAllTopics").checked = false; renderTopics(); }
+function updateBatchBar(){ const n = STATE.selectedTopics.size; $("#batchCountText").textContent = `已选择 ${n} 个主题`; $("#topicBatchBar").classList.toggle("show", n > 0); }
+
+function renderTasks(){
+  const tb = $("#tasksBody");
+  if(!STATE.tasks.length){
+    tb.innerHTML = '<tr><td colspan="8" class="empty">暂无任务 — 可在「主题与批量协作」或 Antigravity 对话中批量下发</td></tr>';
+    return;
+  }
+  tb.innerHTML = STATE.tasks.map(t => {
+    const costTxt = `${t.est_cost_pct != null ? Number(t.est_cost_pct).toFixed(1)+"%" : "—"} / ${t.actual_delta_5h_pct != null ? Number(t.actual_delta_5h_pct).toFixed(2)+"%" : "—"}`;
+    const outTxt = t.error_msg ? `<span style="color:var(--red)">${esc(t.error_msg)}</span>` : esc(t.result_artifact_path || t.result_text || (t.scheduled_after ? "预计唤醒: " + fmtReset(t.scheduled_after) : "—"));
+    return `<tr>
+      <td class="mono">#${t.id}</td>
+      <td><b>${esc(t.topic_name || "未关联")}</b><div class="sub mono">${esc(t.batch_id || "")}</div></td>
+      <td class="mono">${esc(t.task_type)}</td>
+      <td>${esc(t.assigned_alias || (t.preferred_alias ? "偏好:"+t.preferred_alias : "自动调度"))}<div class="sub mono">${esc(t.channel_used || "")}</div></td>
+      <td class="num mono">${costTxt}</td>
+      <td>${taskPill(t.status)}</td>
+      <td style="max-width:280px;word-break:break-all;font-size:12px">${outTxt}</td>
+      <td class="ops">
+        ${t.status === "failed" || t.status === "canceled" ? `<button class="link" onclick="retryTask(${t.id})">重试</button>` : ""}
+        ${["pending","waiting_quota","deferred_later"].includes(t.status) ? `<button class="link danger" onclick="cancelTask(${t.id})">取消</button>` : ""}
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+async function loadTasks(){
+  const st = $("#taskStatusFilter").value;
+  const data = await api(`/api/tasks?status=${encodeURIComponent(st)}&limit=150`);
+  STATE.tasks = data.tasks || [];
+  renderTasks();
+}
+
+async function loadDrive(){
+  try{
+    const [inbox, lib, topicsDrive] = await Promise.all([
+      api("/api/drive/inbox"),
+      api(`/api/drive/library?subpath=${encodeURIComponent(STATE.libSubpath)}`),
+      api("/api/drive/topics")
+    ]);
+    $("#hubRootLabel").textContent = (inbox.hub_root || "") + "\\01_Inbox";
+    const inboxEntries = inbox.entries || [];
+    $("#inboxBody").innerHTML = inboxEntries.length ? inboxEntries.map(e => `<tr>
+      <td>${e.is_dir ? "" : `<input type="checkbox" ${STATE.selectedDriveFiles.has(e.path) ? "checked" : ""} onchange="toggleDriveFile(decodeURIComponent('${encodeURIComponent(e.path)}'), this.checked)">`}</td>
+      <td style="word-break:break-all">${e.is_dir ? "📁 " : "📄 "}${esc(e.name)}</td>
+      <td class="num">${fmtBytes(e.size_bytes)}</td>
+      <td class="mono">${esc(e.modified_at)}</td>
+    </tr>`).join("") : '<tr><td colspan="4" class="empty">01_Inbox 暂无文件</td></tr>';
+
+    $("#libSubpathLabel").textContent = "/" + (lib.subpath || "");
+    const libEntries = lib.entries || [];
+    $("#libraryBody").innerHTML = libEntries.length ? libEntries.map(e => `<tr>
+      <td>${e.is_dir ? "" : `<input type="checkbox" ${STATE.selectedDriveFiles.has(e.path) ? "checked" : ""} onchange="toggleDriveFile(decodeURIComponent('${encodeURIComponent(e.path)}'), this.checked)">`}</td>
+      <td style="word-break:break-all">${e.is_dir ? `<button class="link" onclick="navLibrary(decodeURIComponent('${encodeURIComponent(e.relative_path)}'))">📁 ${esc(e.name)}</button>` : "📄 " + esc(e.name)}</td>
+      <td class="num">${fmtBytes(e.size_bytes)}</td>
+    </tr>`).join("") : '<tr><td colspan="3" class="empty">目录为空或云盘未挂载</td></tr>';
+
+    const arts = topicsDrive.recent_artifacts || [];
+    $("#artifactsBody").innerHTML = arts.length ? arts.map(r => `<tr>
+      <td><b>${esc(r.topic_name || "—")}</b></td>
+      <td class="mono">${esc(r.kind)}</td>
+      <td>${esc(r.title)}</td>
+      <td>${esc(r.account_alias || "—")}</td>
+      <td class="mono" style="max-width:300px;word-break:break-all">${esc(r.local_drive_path || "—")}</td>
+      <td class="mono">${esc(r.created_at)}</td>
+    </tr>`).join("") : '<tr><td colspan="6" class="empty">尚无产物归档记录</td></tr>';
+  }catch(e){ toast("加载云盘失败: " + e.message, true); }
+}
+function toggleDriveFile(path, checked){ if(checked) STATE.selectedDriveFiles.add(path); else STATE.selectedDriveFiles.delete(path); }
+function navLibrary(sub){ STATE.libSubpath = sub; loadDrive(); }
+function navLibraryUp(){ if(!STATE.libSubpath) return; const parts = STATE.libSubpath.split(/[\\/]+/).filter(Boolean); parts.pop(); STATE.libSubpath = parts.join("/"); loadDrive(); }
+
+function renderLedgerAndSettings(){
+  $("#ledgerBody").innerHTML = STATE.accounts.map(a => `<tr>
+    <td><b>${esc(a.alias)}</b>${a.is_hub_master ? ' <span class="pill p-green">主盘</span>' : ""}</td>
+    <td class="mono">${esc(a.email)}</td>
+    <td>${tierPill(a.tier)}</td>
+    <td class="num mono">${a.notebook_limit || 500} / ${a.source_limit || 600}</td>
+    <td>${authPill(a.nlm_auth_status)}</td>
+    <td>${authPill(a.oauth_status_live || a.official_oauth_status)}</td>
+    <td>${daysLeftBadge(a.expire_date)}</td>
+    <td class="mono">${a.cdp_port || "—"}</td>
+    <td style="max-width:180px">${esc(a.note)}</td>
+    <td class="ops">
+      <button class="link" onclick="openAccountModal(${a.id})">编辑</button>
+      <button class="link danger" onclick="deleteAccount(${a.id})">删除</button>
+    </td>
+  </tr>`).join("");
+
+  const s = STATE.settings || {};
+  $("#stTierPolicy").value = s.tier_policy || "conserve_ultra";
+  $("#stCouplingMode").value = s.coupling_mode || "shared_with_drive_fallback";
+  $("#stSafetyBuf").value = s.safety_buffer_pct || "10";
+  $("#stPollMin").value = s.poll_interval_min || "12";
+  $("#stDelayMin").value = s.task_delay_min_sec || "8";
+  $("#stDelayMax").value = s.task_delay_max_sec || "18";
+  $("#stLang").value = s.default_language || "zh-Hans";
+  $("#stWorkspaceRoot").value = s.workspace_root || "";
+  $("#stHubRoot").value = s.drive_hub_root || "";
+  $("#stOfficialEnabled").value = s.official_api_enabled || "false";
+  $("#stOfficialProxy").value = s.official_proxy_url || "";
+}
+
+async function pollOne(id){
+  toast("正在查询实时 5h 与周额度…");
+  try{ const r = await api(`/api/accounts/${id}/poll-quota`, {method:"POST"}); toast(`${r.alias}: ${r.nlm_auth_status === "ok" ? "5h剩余 " + Number(r.five_hour_remaining_pct).toFixed(1) + "%" : r.nlm_auth_status}`); await refreshAll(); }
+  catch(e){ toast(e.message, true); }
+}
+async function pollAll(){
+  toast("正在轮询全部在线账号额度…");
+  try{ await api("/api/accounts/poll-all", {method:"POST"}); await refreshAll(); toast("全池额度已刷新"); }
+  catch(e){ toast(e.message, true); }
+}
+function openCh2LoginModal(id){
+  const a = STATE.accounts.find(x => x.id === id) || { id, alias: "账号#" + id, email: "", cdp_port: 9222 };
+  showModal(`<h3>🔐 登录 Channel 2 会话（实时测额 / 生成 Studio / Chat）· ${esc(a.alias)}</h3>
+    <div class="hint" style="margin-bottom:10px">
+      目标账号：<b class="mono">${esc(a.email)}</b> · 免关日常浏览器，点击下方按钮立即在前台弹出独立窗口并自动同步会话：
+    </div>
+    <div class="card-box" style="margin-bottom:10px;background:#faf8f3">
+      <div style="font-weight:700;margin-bottom:6px">方式一（一键弹出浏览器 · 自动检测登录完成并测额）</div>
+      <div class="hint" style="margin-bottom:8px">点击用 Chrome 或 Edge 前台打开 <span class="mono">https://notebook.google.com/</span> 隔离窗口，登录目标账号进入主页后系统每 2.5 秒自动完成同步（无需回点）：</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn primary" onclick="launchCh2Browser(${a.id}, 'chrome')">🚀 用 Chrome 打开登录页 (:${esc(a.cdp_port || 9222)})</button>
+        <button class="btn primary" style="background:#0f5c8f;border-color:#0f5c8f" onclick="launchCh2Browser(${a.id}, 'edge')">🌐 用 Edge 打开登录页 (:${esc(a.cdp_port || 9222)})</button>
+        <button class="btn" id="btnCaptureCdp" onclick="captureCdpSession(${a.id})">⚡ 手动立即同步并测额</button>
+      </div>
+    </div>
+    <div class="card-box" style="margin-bottom:10px">
+      <div style="font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <span>方式二（5 秒极速 · 直接从当前浏览器导入，不用重输密码）</span>
+        <a class="btn sm" href="https://notebook.google.com/" target="_blank" rel="noopener">🔗 在当前浏览器打开 notebook.google.com</a>
+      </div>
+      <div class="hint" style="margin-bottom:6px">
+        在已登录的浏览器打开上面链接，按 <b class="mono">F12</b> → 切到 <b class="mono">Network</b> → 刷新一次 → 右键第一条 <span class="mono">notebook.google.com</span> 请求选 <b>Copy → Copy as cURL (bash)</b> 粘贴到下面：
+      </div>
+      <div class="form-grid">
+        <label class="full">
+          <textarea id="ch2RawCookieInput" rows="4" class="mono" placeholder="支持粘贴 Copy as cURL (bash/cmd)、Cookie: SID=... 或 Cookie-Editor JSON"></textarea>
+        </label>
+      </div>
+      <div style="margin-top:8px;display:flex;justify-content:flex-end">
+        <button class="btn primary sm" id="btnImportRawCookie" onclick="submitRawCookies(${a.id})">⚡ 解析导入并立即测额</button>
+      </div>
+    </div>
+    <div class="hint mono" id="ch2LoginStatus" style="margin-top:6px"></div>
+    <details style="margin-top:8px">
+      <summary class="link" style="padding:0">备用方式（关闭日常 Chrome 后提取本地库 / Playwright 终端）</summary>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <button class="btn sm" onclick="importChromeCookies(${a.id})">提取本机 Chrome Cookie</button>
+        <button class="btn sm" onclick="loginNlm(${a.id})">旧版 Playwright 终端登录</button>
+      </div>
+    </details>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">关闭</button>
+    </div>`);
+}
+async function launchCh2Browser(id, browser="chrome"){
+  if(window._ch2PollTimer){ clearInterval(window._ch2PollTimer); window._ch2PollTimer = null; }
+  const acct = STATE.accounts.find(x => x.id === id) || { email: "", cdp_port: 9222 };
+  const label = browser === "edge" ? "Edge" : "Chrome";
+  const st = $("#ch2LoginStatus");
+  if(st){ st.style.color = "var(--accent)"; st.textContent = `⏳ 正在前台启动专属 ${label} (:${acct.cdp_port || 9222})…`; }
+  try{
+    const r = await api(`/api/accounts/${id}/open-browser`, {
+      method: "POST",
+      body: JSON.stringify({url: "https://notebook.google.com/", browser})
+    });
+    const usedLabel = r.browser === "edge" ? "Edge" : "Chrome";
+    if(st){
+      st.style.color = "var(--accent)";
+      st.textContent = `⏳ 已在前台弹出 ${usedLabel} 登录窗口 (:${r.cdp_port})，请登录 ${acct.email || "目标账号"} 并进入 notebook.google.com 主页；登录完成后将自动捕获会话并测额（每 2.5 秒自动检测）…`;
+    }
+    toast(`已打开专属 ${usedLabel} 窗口，登录后将自动完成同步`);
+
+    let busy = false;
+    window._ch2PollTimer = setInterval(async () => {
+      if(busy) return;
+      busy = true;
+      try{
+        const res = await api(`/api/accounts/${id}/capture-cdp?silent=true`, {method: "POST"});
+        if(res.ok){
+          clearInterval(window._ch2PollTimer);
+          window._ch2PollTimer = null;
+          await refreshAll();
+          const q = res.quota || {};
+          closeModal();
+          toast(`🎉 ${usedLabel} 自动同步成功！5h剩余 ${q.five_hour_remaining_pct != null ? Number(q.five_hour_remaining_pct).toFixed(1) + "%" : "OK"}`);
+        }else if(res.waiting === false){
+          clearInterval(window._ch2PollTimer);
+          window._ch2PollTimer = null;
+          const errTxt = (res.quota && res.quota.error_msg) || res.detail || "捕获到会话但测额失败，请确认登录的是对应邮箱账号";
+          if(st){ st.style.color = "var(--red)"; st.textContent = "❌ " + errTxt; }
+          toast(errTxt, true);
+        }
+      }catch(_){
+        // Transient polling error while browser initializes — ignore until next tick.
+      }finally{
+        busy = false;
+      }
+    }, 2500);
+  }catch(e){
+    if(st){ st.style.color = "var(--red)"; st.textContent = "❌ " + e.message; }
+    toast(e.message, true);
+  }
+}
+async function captureCdpSession(id){
+  const st = $("#ch2LoginStatus");
+  const btn = $("#btnCaptureCdp");
+  if(btn){ btn.disabled = true; btn.textContent = "同步并测额中…"; }
+  if(st){ st.style.color = "var(--muted)"; st.textContent = "⏳ 正在从专属 Chrome 读取认证 Cookie 并实时测算 5h/周额度…"; }
+  try{
+    const r = await api(`/api/accounts/${id}/capture-cdp`, {method:"POST"});
+    await refreshAll();
+    if(r.ok){
+      const q = r.quota || {};
+      closeModal();
+      toast(`🎉 Ch2 会话同步成功！5h剩余 ${q.five_hour_remaining_pct != null ? Number(q.five_hour_remaining_pct).toFixed(1) + "%" : "OK"}`);
+    }else{
+      const errTxt = (r.quota && r.quota.error_msg) || "Cookie 已写入但测额返回未认证，请确认浏览器已进入 NotebookLM 笔记本主页";
+      if(st){ st.style.color = "var(--red)"; st.textContent = "❌ " + errTxt; }
+      toast(errTxt, true);
+    }
+  }catch(e){
+    if(st){ st.style.color = "var(--red)"; st.textContent = "❌ " + e.message; }
+    toast(e.message, true);
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = "⚡ ② 我已进入主页，一键同步会话并测额"; }
+  }
+}
+async function submitRawCookies(id){
+  const rawInput = ($("#ch2RawCookieInput") && $("#ch2RawCookieInput").value || "").trim();
+  if(!rawInput) return toast("请先粘贴 Copy as cURL 或 Cookie 字符串", true);
+  const st = $("#ch2LoginStatus");
+  const btn = $("#btnImportRawCookie");
+  if(btn){ btn.disabled = true; btn.textContent = "解析验证中…"; }
+  if(st){ st.style.color = "var(--muted)"; st.textContent = "⏳ 正在解析 Cookie、写入隔离档案并实时测额…"; }
+  try{
+    const r = await api(`/api/accounts/${id}/import-cookies-raw`, {method:"POST", body:JSON.stringify({raw_input: rawInput})});
+    await refreshAll();
+    if(r.ok){
+      const q = r.quota || {};
+      closeModal();
+      toast(`🎉 Cookie 导入成功！5h剩余 ${q.five_hour_remaining_pct != null ? Number(q.five_hour_remaining_pct).toFixed(1) + "%" : "OK"}`);
+    }else{
+      const errTxt = (r.quota && r.quota.error_msg) || "Cookie 已写入但测额未通过，请重新刷新 notebook.google.com 后复制第一条请求 cURL";
+      if(st){ st.style.color = "var(--red)"; st.textContent = "❌ " + errTxt; }
+      toast(errTxt, true);
+    }
+  }catch(e){
+    if(st){ st.style.color = "var(--red)"; st.textContent = "❌ " + e.message; }
+    toast(e.message, true);
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = "⚡ 解析导入并立即测额"; }
+  }
+}
+async function loginNlm(id){
+  try{ const r = await api(`/api/accounts/${id}/login`, {method:"POST"}); toast(r.message || "已弹出登录窗口"); }
+  catch(e){ toast(e.message, true); }
+}
+async function importChromeCookies(id){
+  toast("正在同步专属 Chrome / 本机 Cookie 并测额…");
+  try{
+    const r = await api(`/api/accounts/${id}/import-browser-cookies`, {method:"POST"});
+    await refreshAll();
+    if(r.ok){
+      const q = r.quota || {};
+      const fRem = q.five_hour_remaining_pct != null ? ` · 5h剩余 ${Number(q.five_hour_remaining_pct).toFixed(1)}%` : "";
+      const wRem = q.weekly_remaining_pct != null ? ` · 周剩余 ${Number(q.weekly_remaining_pct).toFixed(1)}%` : "";
+      toast(`🎉 Cookie 同步成功${fRem}${wRem}`);
+    }else{
+      toast(r.detail || "提取失败，请改用「一键登录会话」", true);
+      if(r.source !== "cdp") openCh2LoginModal(id);
+    }
+  }catch(e){ toast(e.message, true); }
+}
+function oauthOfficial(id){
+  const acct = STATE.accounts.find(a => a.id === id) || { id, alias: "账号#" + id, email: "" };
+  const redirectUrl = `/api/accounts/${id}/oauth-redirect?t=${Date.now()}`;
+  const permUrl = `${window.location.origin}/api/accounts/${id}/oauth-redirect`;
+  window._lastOauthUrl = permUrl;
+
+  // Synchronously open inside user click event so Chrome never blocks the popup.
+  let win = null;
+  try{ win = window.open(redirectUrl, "_blank", "noopener"); }catch(_){}
+
+  showModal(`<h3>🔑 官方 Gemini Notebook API OAuth 授权 · ${esc(acct.alias)}</h3>
+    <div class="hint" style="margin-bottom:8px">
+      ${win ? "已在浏览器新标签页打开 Google 授权页，" : "浏览器未直接打开新标签页，请点击下方按钮打开：" }
+      请使用账号 <b class="mono">${esc(acct.email || "")}</b> 点击同意授权（每次点击都会自动刷新 30 分钟本地回调端口，永不过期）。
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
+      <a class="btn primary" href="${esc(redirectUrl)}" target="_blank" rel="noopener">🔗 ${win ? "重新打开" : "打开"} Google 授权页</a>
+      <button class="btn" onclick="copyOauthLink()">📋 复制永久授权入口</button>
+    </div>
+    <div class="hint mono" id="oauthWaitMsg" style="margin-top:8px">⏳ 正在等待浏览器完成 Google 授权回调（每 2 秒自动检测）…</div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">关闭</button>
+    </div>`);
+
+  if(window._oauthPollTimer) clearInterval(window._oauthPollTimer);
+  window._oauthPollTimer = setInterval(async () => {
+    try{
+      const st = await api("/api/official/status");
+      const hit = (st.accounts || []).find(a => a.id === id);
+      if(hit && hit.official_oauth_status === "ok"){
+        clearInterval(window._oauthPollTimer);
+        window._oauthPollTimer = null;
+        closeModal();
+        await Promise.all([refreshAll(), loadOfficialStatus()]);
+        toast("🎉 官方 API OAuth 授权成功！");
+      }else if(hit && hit.oauth_last_error){
+        const msgEl = $("#oauthWaitMsg");
+        if(msgEl){
+          msgEl.style.color = "var(--red)";
+          msgEl.textContent = "❌ 授权错误: " + hit.oauth_last_error;
+        }
+      }
+    }catch(_){}
+  }, 2000);
+}
+async function copyOauthLink(){
+  if(!window._lastOauthUrl) return;
+  try{
+    await navigator.clipboard.writeText(window._lastOauthUrl);
+    toast("已复制永久授权链接，直接粘贴到浏览器打开即可");
+  }catch(e){ toast("复制失败，请直接点击绿色授权按钮", true); }
+}
+async function openChrome(id){
+  try{
+    const r = await api(`/api/accounts/${id}/open-browser`, {method:"POST", body:JSON.stringify({url:"https://notebook.google.com/", browser:"auto"})});
+    const label = r.browser === "edge" ? "Edge" : "Chrome";
+    const msg = r.already_running
+      ? `已为专属 ${label} (CDP :${r.cdp_port}) 打开新窗口，请在对应浏览器登录 NotebookLM 后点击同步`
+      : `已在前台启动专属纯净 ${label} (CDP :${r.cdp_port})，请在弹出窗口登录 NotebookLM 后点击同步`;
+    const st = $("#ch2LoginStatus");
+    if(st){ st.style.color = "var(--accent)"; st.textContent = "✅ " + msg; }
+    toast(msg);
+  }catch(e){ toast(e.message, true); }
+}
+async function syncAllNotebooks(){
+  toast("正在跨账号同步远程笔记本…");
+  try{ const r = await api("/api/notebooks/sync-all", {method:"POST"}); await refreshAll(); toast(`同步完成: ${r.synced_notebooks} 个笔记本`); }
+  catch(e){ toast(e.message, true); }
+}
+async function shareTopicAll(topicId){
+  try{ const r = await api(`/api/topics/${topicId}/share-all`, {method:"POST"}); await refreshAll(); toast(`已共享给 ${r.shared.length} 个账号`); }
+  catch(e){ toast(e.message, true); }
+}
+async function deleteTopic(topicId){
+  if(!confirm("确定删除该主题索引吗？（不会删除本地文件）")) return;
+  try{ await api(`/api/topics/${topicId}`, {method:"DELETE"}); STATE.selectedTopics.delete(topicId); await refreshAll(); toast("已删除主题"); }
+  catch(e){ toast(e.message, true); }
+}
+async function deleteAccount(id){
+  if(!confirm("确定从台账移除该账号吗？")) return;
+  try{ await api(`/api/accounts/${id}`, {method:"DELETE"}); await refreshAll(); toast("账号已删除"); }
+  catch(e){ toast(e.message, true); }
+}
+async function importExistingProfiles(){
+  try{ const r = await api("/api/accounts/import-existing-profiles", {method:"POST"}); await refreshAll(); toast(`导入 ${r.imported.length} 个已有 profile`); }
+  catch(e){ toast(e.message, true); }
+}
+async function triggerTick(){
+  try{ const r = await api("/api/tasks/tick", {method:"POST"}); await refreshAll(); toast(`调度本轮已执行 ${r.dispatched} 个任务`); }
+  catch(e){ toast(e.message, true); }
+}
+async function cancelTask(id){
+  try{ await api(`/api/tasks/${id}/cancel`, {method:"POST"}); await refreshAll(); toast("已取消任务 #" + id); }
+  catch(e){ toast(e.message, true); }
+}
+async function retryTask(id){
+  try{ await api(`/api/tasks/${id}/retry`, {method:"POST"}); await refreshAll(); toast("已重新入队 #" + id); }
+  catch(e){ toast(e.message, true); }
+}
+async function backupDriveNow(){
+  try{ const r = await api("/api/drive/backup-now", {method:"POST"}); toast("已备份至 " + r.backup_path); }
+  catch(e){ toast(e.message, true); }
+}
+async function ingestSelectedDriveFiles(alsoGenerate){
+  const topicId = Number($("#driveTargetTopic").value);
+  if(!topicId) return toast("请先选择或创建一个目标主题", true);
+  const files = Array.from(STATE.selectedDriveFiles);
+  if(!files.length) return toast("请先勾选要导入的文件", true);
+  try{
+    await api(`/api/topics/${topicId}/ingest`, {method:"POST", body:JSON.stringify({file_paths:files})});
+    if(alsoGenerate){
+      await api("/api/tasks/batch", {method:"POST", body:JSON.stringify({topic_ids:[topicId], actions:["audio","quiz","report"], language:$("#stLang").value || "zh-Hans"})});
+    }
+    STATE.selectedDriveFiles.clear();
+    await Promise.all([refreshAll(), loadDrive()]);
+    toast(`已排入 ${files.length} 个文件${alsoGenerate ? "并追加学习套装生成任务" : ""}`);
+  }catch(e){ toast(e.message, true); }
+}
+async function saveStrategySettings(){
+  try{
+    await api("/api/settings", {method:"PUT", body:JSON.stringify({updates:{
+      tier_policy:$("#stTierPolicy").value,
+      coupling_mode:$("#stCouplingMode").value,
+      safety_buffer_pct:$("#stSafetyBuf").value,
+      poll_interval_min:$("#stPollMin").value,
+      task_delay_min_sec:$("#stDelayMin").value,
+      task_delay_max_sec:$("#stDelayMax").value,
+      default_language:$("#stLang").value,
+      workspace_root:$("#stWorkspaceRoot").value.trim(),
+      drive_hub_root:$("#stHubRoot").value.trim(),
+      official_api_enabled:$("#stOfficialEnabled").value,
+      official_proxy_url:$("#stOfficialProxy").value.trim()
+    }})});
+    await Promise.all([refreshAll(), loadWorkspaceTree()]);
+    toast("全局策略与工作区路径已保存");
+  }catch(e){ toast(e.message, true); }
+}
+async function exportBackupJson(){
+  try{
+    const data = await api("/api/export/json");
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "notebooklm_fleet_backup_" + new Date().toISOString().slice(0,10) + ".json";
+    a.click();
+  }catch(e){ toast(e.message, true); }
+}
+
+/* Modals */
+function showModal(html){ $("#modalBody").innerHTML = html; $("#overlay").classList.add("show"); }
+function closeModal(){
+  if(window._oauthPollTimer){ clearInterval(window._oauthPollTimer); window._oauthPollTimer = null; }
+  if(window._ch2PollTimer){ clearInterval(window._ch2PollTimer); window._ch2PollTimer = null; }
+  $("#overlay").classList.remove("show");
+}
+document.addEventListener("keydown", e => { if(e.key === "Escape") closeModal(); });
+
+function openAccountModal(id=null){
+  const a = id ? STATE.accounts.find(x => x.id === id) : null;
+  showModal(`<h3>${a ? "编辑账号" : "新增 Google 账号"}</h3>
+    <div class="form-grid">
+      <label>别名 (如 ultra-2 / pro-1 / free-1)<input id="mAlias" value="${esc(a ? a.alias : "")}" placeholder="留空自动按档位编号"></label>
+      <label>账号档位
+        <select id="mTier">
+          <option value="ultra" ${!a||a.tier==="ultra"?"selected":""}>Ultra (500本/600源)</option>
+          <option value="pro" ${a&&a.tier==="pro"?"selected":""}>Pro (500本/300源)</option>
+          <option value="plus" ${a&&a.tier==="plus"?"selected":""}>Plus (200本/100源)</option>
+          <option value="free" ${a&&a.tier==="free"?"selected":""}>Free (100本/50源)</option>
+        </select>
+      </label>
+      <label class="full">Google 邮箱<input id="mEmail" value="${esc(a ? a.email : "")}" placeholder="example@gmail.com"></label>
+      <label>订阅到期日 (可选)<input id="mExpire" type="date" value="${esc(a && a.expire_date ? a.expire_date : "")}"></label>
+      <label>状态<select id="mEnabled"><option value="1" ${!a||a.enabled?"selected":""}>启用调度</option><option value="0" ${a&&!a.enabled?"selected":""}>暂停使用</option></select></label>
+      <label class="full">备注<input id="mNote" value="${esc(a ? a.note : "")}" placeholder="例如: 2号Ultra主做视频与音频"></label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn primary" onclick="submitAccount(${id || "null"})">保存</button>
+    </div>`);
+}
+async function submitAccount(id){
+  const body = {
+    alias: $("#mAlias").value.trim() || null,
+    email: $("#mEmail").value.trim(),
+    tier: $("#mTier").value,
+    expire_date: $("#mExpire").value || null,
+    enabled: $("#mEnabled").value === "1",
+    note: $("#mNote").value.trim()
+  };
+  if(!body.email) return toast("请输入邮箱", true);
+  try{
+    if(id) await api(`/api/accounts/${id}`, {method:"PUT", body:JSON.stringify(body)});
+    else await api("/api/accounts", {method:"POST", body:JSON.stringify(body)});
+    closeModal(); await refreshAll(); toast(id ? "账号已更新" : "账号已新增");
+  }catch(e){ toast(e.message, true); }
+}
+
+function openTopicModal(){
+  const acctOpts = STATE.accounts.map(a => `<option value="${a.id}">${esc(a.alias)} (${esc(a.email)})</option>`).join("");
+  showModal(`<h3>新建学习主题 (同步创建 Drive 目录)</h3>
+    <div class="form-grid">
+      <label class="full">主题名称<input id="tName" placeholder="例如: 强化学习论文精读_2026Q4"></label>
+      <label>主管理账号<select id="tMaster">${acctOpts}</select></label>
+      <label>跨账号协作模式
+        <select id="tMode">
+          <option value="shared_with_drive_fallback">主本共享 + Drive 镜像兜底</option>
+          <option value="shared">仅主本共享 Editor</option>
+          <option value="drive_mirror">仅 Drive 独立镜像</option>
+        </select>
+      </label>
+      <label class="full">备注<input id="tNote" placeholder="学习目标或标签"></label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn primary" onclick="submitTopic()">创建</button>
+    </div>`);
+}
+async function submitTopic(){
+  const name = $("#tName").value.trim();
+  if(!name) return toast("请输入主题名称", true);
+  try{
+    await api("/api/topics", {method:"POST", body:JSON.stringify({
+      name, master_account_id: Number($("#tMaster").value) || null,
+      coupling_mode: $("#tMode").value, note: $("#tNote").value.trim(), create_remote: true
+    })});
+    closeModal(); await refreshAll(); toast("主题与 Google Drive 文件夹已创建");
+  }catch(e){ toast(e.message, true); }
+}
+
+function openIngestModal(topicId){
+  showModal(`<h3>导入 URL 或文件到主题</h3>
+    <div class="form-grid">
+      <label class="full">网页 / YouTube 链接（每行一个）<textarea id="ingUrls" rows="4" placeholder="https://arxiv.org/abs/..."></textarea></label>
+      <label class="full">本地工作区或云盘文件路径（每行一个）<textarea id="ingFiles" rows="3" placeholder="/path/to/workspace/doc.md"></textarea></label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn primary" onclick="submitIngest(${topicId})">加入导入队列</button>
+    </div>`);
+}
+async function submitIngest(topicId){
+  const urls = $("#ingUrls").value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  const file_paths = $("#ingFiles").value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  if(!urls.length && !file_paths.length) return toast("请输入至少一条链接或路径", true);
+  try{
+    const r = await api(`/api/topics/${topicId}/ingest`, {method:"POST", body:JSON.stringify({urls, file_paths})});
+    closeModal(); await refreshAll(); toast(`已提交 ${r.created_count} 个导入任务`);
+  }catch(e){ toast(e.message, true); }
+}
+
+function openBatchModal(singleTopicId=null){
+  const ids = singleTopicId ? [singleTopicId] : Array.from(STATE.selectedTopics);
+  if(!ids.length) return toast("请先勾选至少一个主题", true);
+  const actions = [
+    ["audio","🎙️ 音频播客"],["video","🎬 视频概览"],["cinematic_video","🎥 电影级视频"],
+    ["slide_deck","📊 幻灯片"],["quiz","📝 测验"],["flashcards","🗂️ 闪卡"],
+    ["infographic","🖼️ 信息图"],["mind_map","🧠 思维导图"],["report","📄 简报文档"],
+    ["study_guide","📚 学习指南"],["data_table","📈 数据表"],["chat","💬 Chat 提问导出"]
+  ];
+  const acctOpts = ['<option value="">自动调度 (按 5h/周额度最优分配)</option>']
+    .concat(STATE.accounts.map(a => `<option value="${a.id}">${esc(a.alias)} (${esc(a.tier)})</option>`)).join("");
+  showModal(`<h3>批量排程 Studio / Chat（已选 ${ids.length} 个主题）</h3>
+    <div class="form-grid">
+      <div class="full">
+        <div style="font-size:12px;color:var(--muted)">选择要生成的产出（可多选）：</div>
+        <div class="check-grid">
+          ${actions.map(([v,lbl]) => `<label class="check-item"><input type="checkbox" name="bAct" value="${v}"><span>${lbl}</span></label>`).join("")}
+        </div>
+      </div>
+      <label>指定偏好账号<select id="bPref">${acctOpts}</select></label>
+      <label>档位硬性要求<select id="bTier"><option value="any">不限（跟随全局策略）</option><option value="ultra">仅限 Ultra</option><option value="pro_plus">Pro / Plus / Ultra</option></select></label>
+      <label>输出语言<input id="bLang" value="${esc(STATE.settings.default_language || "zh-Hans")}"></label>
+      <label>优先级<input id="bPrio" type="number" value="50"></label>
+      <label class="full">聚焦提示词 / Chat 提问内容<textarea id="bInst" rows="3" placeholder="可选聚焦方向"></textarea></label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn primary" onclick="submitBatch([${ids.join(",")}])">加入调度队列</button>
+    </div>`);
+}
+async function submitBatch(topicIds){
+  const acts = Array.from(document.querySelectorAll('input[name="bAct"]:checked')).map(el => el.value);
+  if(!acts.length) return toast("请至少勾选一种产出类型", true);
+  try{
+    const r = await api("/api/tasks/batch", {method:"POST", body:JSON.stringify({
+      topic_ids: topicIds, actions: acts,
+      instructions: $("#bInst").value.trim() || null,
+      question: $("#bInst").value.trim() || null,
+      language: $("#bLang").value.trim() || "zh-Hans",
+      preferred_account_id: Number($("#bPref").value) || null,
+      tier_requirement: $("#bTier").value,
+      priority: Number($("#bPrio").value) || 50
+    })});
+    closeModal(); await refreshAll(); toast(`已排入 ${r.created_count} 个任务 (批次 ${r.batch_id})`);
+  }catch(e){ toast(e.message, true); }
+}
+
+document.querySelectorAll(".tab").forEach(btn => {
+  btn.addEventListener("click", () => switchTab(btn.dataset.panel));
+});
+
+fillMcpToolTemplate();
+refreshAll();
+loadWorkspaceTree();
+setInterval(refreshAll, 25000);
+</script>
+</body>
+</html>
