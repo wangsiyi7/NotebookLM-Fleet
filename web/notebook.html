@@ -13,20 +13,20 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.58}
-.top-wrap{background:var(--card);border-bottom:2px solid var(--ink);padding:12px 20px;position:sticky;top:0;z-index:40}
-.top{max-width:1360px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.title-area h1{font-family:"Songti SC","STSong",serif;font-size:20px;line-height:1.35;margin-top:4px;word-break:break-word}
-.meta-pills{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px}
-.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.top-wrap{background:var(--card);border-bottom:2px solid var(--ink);padding:8px 18px;position:sticky;top:0;z-index:40}
+.top{max-width:1440px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.title-area h1{font-family:"Songti SC","STSong",serif;font-size:18.5px;line-height:1.25;margin-top:2px;word-break:break-word}
+.meta-pills{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.actions{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
 
-.btn{appearance:none;border:1px solid var(--ink);background:var(--card);color:var(--ink);padding:6px 12px;border-radius:8px;font-size:12.5px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.btn{appearance:none;border:1px solid var(--ink);background:var(--card);color:var(--ink);padding:5px 11px;border-radius:8px;font-size:12.5px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .btn:hover{background:#f0ede4}
 .btn:disabled{opacity:.55;cursor:not-allowed}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn.primary:hover{background:#0e5a50}
 .btn.sm{padding:4px 9px;font-size:11.5px;border-radius:6px;border-color:#c9c4b7}
 
-.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:500;white-space:nowrap}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:500;white-space:nowrap}
 .p-green{background:#e4f1ec;color:#136f63}
 .p-blue{background:#e8eef9;color:#2456a6}
 .p-amber{background:#f7efdd;color:#9a6b16}
@@ -35,52 +35,64 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}
 .hint{font-size:12px;color:var(--muted)}
 
-.wrap{max-width:1360px;margin:0 auto;padding:18px 20px 64px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px}
-.card h2{font-size:15.5px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.wrap{max-width:1440px;margin:0 auto;padding:14px 18px 54px}
+.nb-layout{display:grid;grid-template-columns:minmax(0,1fr) 372px;gap:16px;align-items:start}
+.nb-main{min-width:0}
+.nb-rail{display:flex;flex-direction:column;gap:12px;position:sticky;top:78px;max-height:calc(100vh - 92px);overflow-y:auto;padding-right:2px}
+@media (max-width:1080px){.nb-layout{grid-template-columns:1fr}.nb-rail{position:static;max-height:none;overflow:visible;padding-right:0}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.rail-card{margin-bottom:0;padding:13px 14px}
+.rail-card.gen-highlight{background:linear-gradient(180deg,#ffffff 0%,#f6faf8 100%);border-color:#c8dcd7}
+.rail-card.pulse{box-shadow:0 0 0 2px var(--accent)}
+.card h2{font-size:14.5px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 
-.analytics-grid{display:grid;grid-template-columns:220px 1fr;gap:18px;align-items:center}
-@media (max-width:780px){.analytics-grid{grid-template-columns:1fr}}
-.donut-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center}
-.studio-stack{display:flex;height:14px;width:100%;border-radius:999px;overflow:hidden;background:#ece8dc;gap:1px;margin-bottom:10px}
+.analytics-compact{display:flex;flex-direction:column;gap:10px}
+.donut-row{display:flex;align-items:center;gap:12px}
+.donut-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
+.studio-stack{display:flex;height:12px;width:100%;border-radius:999px;overflow:hidden;background:#ece8dc;gap:1px;margin-bottom:4px}
 .studio-seg{height:100%}
-.bd-table{width:100%;border-collapse:collapse;font-size:13px}
-.bd-table th{text-align:left;font-size:12px;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line);font-weight:600}
-.bd-table td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.bd-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.bd-table th{text-align:left;font-size:11.5px;color:var(--muted);padding:4px 6px;border-bottom:1px solid var(--line);font-weight:600}
+.bd-table td{padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
 .bd-table tr:last-child td{border-bottom:none}
 .bd-row{cursor:pointer}
 .bd-row:hover{background:#faf8f3}
-.mini-bar{height:8px;background:#ece8dc;border-radius:999px;overflow:hidden;min-width:90px}
+.mini-bar{height:7px;background:#ece8dc;border-radius:999px;overflow:hidden;min-width:64px}
 .mini-bar > span{display:block;height:100%;border-radius:999px}
-.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0}
 
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px;overflow-x:auto}
-.tab{background:none;border:none;padding:9px 14px;font-size:13.5px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
-.tab.active{color:var(--ink);font-weight:700;border-bottom-color:var(--accent)}
+.tabs{display:inline-flex;flex-wrap:wrap;gap:4px;background:#ece8dc;padding:4px;border-radius:10px;border-bottom:none;margin-bottom:12px}
+.tab{background:none;border:none;padding:6px 12px;font-size:13px;color:var(--muted);cursor:pointer;border-radius:7px;white-space:nowrap;font-weight:500}
+.tab.active{background:#fff;color:var(--ink);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .panel{display:none}
 .panel.show{display:block}
 
-.filter-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.filter-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .fpill{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:4px 10px;border-radius:999px;font-size:12px;cursor:pointer}
 .fpill.active{background:var(--accent);border-color:var(--accent);color:#fff}
 
-.art-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
-.art-card{border:1px solid var(--line);border-radius:10px;padding:12px 13px;background:var(--panel);display:flex;flex-direction:column;gap:7px}
+.art-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(275px,1fr));gap:10px}
+.art-card{border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:var(--panel);display:flex;flex-direction:column;gap:6px}
 .art-title{font-weight:600;font-size:13.5px;line-height:1.4;word-break:break-word}
 .art-foot{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:auto;padding-top:6px;border-top:1px dashed var(--line)}
 
 .tablebox{border:1px solid var(--line);border-radius:10px;overflow:auto;background:#fff}
-.src-table{width:100%;border-collapse:collapse;min-width:600px;font-size:13px}
-.src-table th{background:var(--panel);color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);font-size:12px}
-.src-table td{padding:8px 10px;border-bottom:1px solid var(--line);word-break:break-word}
+.src-table{width:100%;border-collapse:collapse;min-width:580px;font-size:12.5px}
+.src-table th{background:var(--panel);color:var(--muted);text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);font-size:12px}
+.src-table td{padding:7px 9px;border-bottom:1px solid var(--line);word-break:break-word}
 .src-table tr:last-child td{border-bottom:none}
 
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
 .form-grid label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:4px}
 .form-grid .full{grid-column:1/-1}
-.form-grid input,.form-grid select,.form-grid textarea{padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;color:var(--ink);background:#fff;font-family:inherit}
-.check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:7px;margin-top:4px}
-.check-item{display:flex !important;flex-direction:row !important;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;font-size:12.5px !important;color:var(--ink) !important;cursor:pointer;background:#faf8f2}
+.form-grid input,.form-grid select,.form-grid textarea{padding:6px 9px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;color:var(--ink);background:#fff;font-family:inherit}
+.check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;margin-top:4px}
+.rail-card .check-grid{grid-template-columns:1fr 1fr;gap:5px}
+.check-item{display:flex !important;flex-direction:row !important;align-items:center;gap:5px;padding:5px 7px;border:1px solid var(--line);border-radius:7px;font-size:12px !important;color:var(--ink) !important;cursor:pointer;background:#faf8f2}
+.check-item:has(input:checked){border-color:var(--accent);background:var(--accent-soft);color:var(--accent) !important;font-weight:600}
+.cinematic-box{border:1px solid #d5c49b;background:#fffbf2;border-radius:9px;padding:9px 10px;margin-top:8px}
+.cinematic-box h4{font-size:12.5px;color:#7a510c;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
+.preset-strip{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed var(--line)}
 
 .chat-log{display:flex;flex-direction:column;gap:10px;margin-top:12px}
 .chat-turn{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#faf8f3}
@@ -90,15 +102,54 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 .toast{position:fixed;right:18px;bottom:18px;z-index:80;background:#20241f;color:#fff;padding:10px 16px;border-radius:9px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.2);display:none;max-width:440px}
 .toast.show{display:block}
 .toast.err{background:#b3402f}
+
+.overlay{position:fixed;inset:0;background:rgba(28,28,24,.48);display:none;z-index:60;overflow:auto;padding:16px}
+.overlay.show{display:block}
+.modal{background:var(--card);max-width:960px;margin:4vh auto;border-radius:12px;padding:20px;box-shadow:0 18px 50px rgba(0,0,0,.22)}
+.modal h3{font-size:16.5px;margin-bottom:10px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.code-pre{background:#1c1f1b;color:#e7ebe5;padding:12px 14px;border-radius:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;overflow:auto;max-height:66vh;white-space:pre-wrap;word-break:break-word}
+.md-view{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 20px;line-height:1.72;font-size:14px;color:var(--ink)}
+.md-view.scroll{max-height:66vh;overflow:auto}
+.md-view h1,.md-view h2,.md-view h3,.md-view h4{font-family:"Songti SC","STSong",serif;margin:14px 0 8px;color:var(--ink);line-height:1.35}
+.md-view h1{font-size:19px;border-bottom:1px solid var(--line);padding-bottom:6px;margin-top:4px}
+.md-view h2{font-size:16.5px}
+.md-view h3{font-size:14.5px}
+.md-view p{margin:8px 0}
+.md-view ul,.md-view ol{padding-left:22px;margin:8px 0}
+.md-view li{margin:3px 0}
+.md-view blockquote{border-left:3px solid var(--accent);background:#f7fbf9;padding:8px 12px;margin:10px 0;color:#2f3a35;border-radius:0 6px 6px 0}
+.md-view code{background:#f3f1ea;padding:1px 5px;border-radius:4px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
+.md-view pre{background:#1c1f1b;color:#e7ebe5;padding:12px 14px;border-radius:8px;overflow:auto;margin:10px 0;font-size:12px}
+.md-view pre code{background:none;padding:0;color:inherit}
+.md-view table{width:100%;margin:10px 0;border-collapse:collapse;border:1px solid var(--line)}
+.md-view th,.md-view td{border:1px solid var(--line);padding:6px 10px;font-size:12.5px;text-align:left}
+.md-view a{color:var(--blue);text-decoration:underline;word-break:break-all}
+.media-box{background:#141714;border-radius:10px;padding:14px;display:flex;justify-content:center;align-items:center;max-height:70vh;overflow:auto}
+.media-box img{max-width:100%;max-height:66vh;border-radius:6px;object-fit:contain}
+.nb-switcher{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;margin-left:10px}
+.nb-switcher select{padding:4px 8px;border:1px solid #c9c4b7;border-radius:6px;font-size:12px;background:#faf8f3;max-width:260px;color:var(--ink)}
+.art-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.art-toolbar input[type=search]{padding:5px 9px;border:1px solid var(--line);border-radius:7px;font-size:12.5px;min-width:200px}
+.prompt-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.prompt-chip{border:1px solid var(--line);background:#faf8f3;color:var(--ink);padding:4px 10px;border-radius:999px;font-size:12px;cursor:pointer}
+.prompt-chip:hover{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.art-card{transition:border-color .15s,box-shadow .15s}
+.art-card:hover{border-color:var(--accent);box-shadow:0 4px 14px rgba(19,111,99,.07)}
 </style>
 </head>
 <body>
 <div class="top-wrap">
   <div class="top">
     <div class="title-area">
-      <div>
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px">
         <a class="btn sm" href="/?tab=panelNotebooks">← 返回笔记本全景</a>
-        <span class="hint mono" id="nbUuidSpan" style="margin-left:8px"></span>
+        <div class="nb-switcher" id="nbSwitcherBar" style="display:none">
+          <button class="btn sm" id="btnPrevNb" onclick="stepNotebook(-1)" title="上一本">◀ 上一本</button>
+          <select id="nbQuickSelect" onchange="jumpQuickNb()" title="快速切换笔记本"></select>
+          <button class="btn sm" id="btnNextNb" onclick="stepNotebook(1)" title="下一本">下一本 ▶</button>
+        </div>
+        <span class="hint mono" id="nbUuidSpan" style="cursor:pointer;text-decoration:underline dotted" title="点击复制远程 UUID" onclick="copyNbUuid()"></span>
       </div>
       <h1 id="nbTitle">加载笔记本详情中…</h1>
       <div class="meta-pills" id="nbMetaPills"></div>
@@ -113,120 +164,190 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 <main class="wrap">
   <div id="warnBanner" class="card" style="display:none;background:#fdf4ec;border-color:#e5bfa5;color:#9a3b26"></div>
 
-  <!-- Hero: Studio Proportion Breakdown -->
-  <section class="card">
-    <h2>
-      <span>📊 Studio 内容构成与占比统计</span>
-      <span class="hint" id="studioSyncTime">—</span>
-    </h2>
-    <div class="analytics-grid" id="analyticsBody">
-      <div class="donut-wrap" id="donutWrap"></div>
-      <div>
-        <div class="studio-stack" id="nbStackBar"></div>
-        <div id="breakdownTableWrap"></div>
+  <div class="nb-layout">
+    <!-- Left Primary Workspace -->
+    <div class="nb-main">
+      <!-- Sub Tabs -->
+      <div class="tabs">
+        <button class="tab active" data-panel="subStudio" id="tabBtnStudio">🎨 Studio 产物 (0)</button>
+        <button class="tab" data-panel="subSources" id="tabBtnSources">📄 来源资料 (0)</button>
+        <button class="tab" data-panel="subChat">💬 可溯源对话</button>
+        <button class="tab" data-panel="subTasks" id="tabBtnTasks">⚙️ 本地任务与归档</button>
       </div>
-    </div>
-  </section>
 
-  <!-- Sub Tabs -->
-  <div class="tabs">
-    <button class="tab active" data-panel="subStudio" id="tabBtnStudio">🎨 Studio 产物 (0)</button>
-    <button class="tab" data-panel="subSources" id="tabBtnSources">📄 来源资料 (0)</button>
-    <button class="tab" data-panel="subChat">💬 可溯源对话 (Chat)</button>
-    <button class="tab" data-panel="subTasks" id="tabBtnTasks">⚙️ 本地任务与归档</button>
-  </div>
+      <!-- Tab 1: Studio Artifacts -->
+      <section class="panel show" id="subStudio">
+        <div class="card">
+          <h2>
+            <span>🎨 远程 Studio 产物</span>
+            <div class="art-toolbar">
+              <input type="search" id="artSearchInput" placeholder="搜索 Studio 标题/ID..." oninput="renderArtifacts()">
+              <button class="btn sm" id="btnBatchDlArts" onclick="batchDownloadFilteredArts()">⬇️ 批量归档可下载项</button>
+              <button class="btn primary sm" onclick="toggleGenBox()">⚡ 生成新 Studio</button>
+            </div>
+          </h2>
+          <div class="filter-pills" id="studioFilterPills"></div>
+          <div class="art-grid" id="artifactsGrid"></div>
+        </div>
+      </section>
 
-  <!-- Tab 1: Studio Artifacts & Generate -->
-  <section class="panel show" id="subStudio">
-    <div class="card">
-      <h2>
-        <span>🎨 远程 Studio 产物列表（点击上方统计行或下方胶囊可按类型筛选）</span>
-        <button class="btn primary sm" onclick="toggleGenBox()">⚡ 为此本生成新 Studio</button>
-      </h2>
-      <div id="genBox" style="display:none;margin-bottom:14px;padding:12px;border:1px solid var(--line);border-radius:10px;background:#faf8f3">
-        <div class="form-grid">
-          <div class="full">
-            <div style="font-size:12px;color:var(--muted)">选择要排程生成的内容（按所属账号额度池自动执行并归档）：</div>
-            <div class="check-grid" id="genCheckGrid"></div>
+      <!-- Tab 2: Sources & Quick Ingest -->
+      <section class="panel" id="subSources">
+        <div class="card">
+          <h2>
+            <span>📄 笔记本来源清单</span>
+            <input type="search" id="srcFilterInput" placeholder="过滤来源标题..." style="padding:5px 9px;border:1px solid var(--line);border-radius:7px;font-size:12.5px" oninput="renderSources()">
+          </h2>
+          <div class="tablebox" style="margin-bottom:14px">
+            <table class="src-table">
+              <thead><tr><th>来源标题</th><th>类型</th><th>状态</th><th>字数</th><th>创建时间</th><th>链接</th></tr></thead>
+              <tbody id="sourcesBody"></tbody>
+            </table>
           </div>
-          <label>输出语言<input id="genLang" value="zh-Hans"></label>
-          <label>聚焦指令 / 提示词（可选）<input id="genInst" placeholder="例如：突出架构取舍与新手科普"></label>
+          <h2 style="margin-top:10px"><span>➕ 快速追加网址或 Markdown 笔记到此笔记本</span></h2>
+          <div class="form-grid">
+            <label>追加网页 / YouTube URL（每行一条）<textarea id="addUrls" rows="3" placeholder="https://..."></textarea></label>
+            <label>追加内联文本 / Markdown 笔记
+              <input id="addTextTitle" placeholder="笔记标题（可选）" style="margin-bottom:5px">
+              <textarea id="addTextBody" rows="2" placeholder="粘贴笔记内容..."></textarea>
+            </label>
+            <label class="full">或从工作区 / Google 云盘导入本地文件（每行一条完整路径）
+              <textarea id="addLocalFiles" rows="2" class="mono" placeholder="例如工作区或已挂载 Google 云盘内的 .md / .pdf / 音视频完整路径"></textarea>
+            </label>
+          </div>
+          <div style="margin-top:10px;display:flex;justify-content:flex-end">
+            <button class="btn primary sm" id="btnIngestNb" onclick="submitNbIngest()">🚀 立即写入此笔记本</button>
+          </div>
         </div>
-        <div style="margin-top:10px;display:flex;justify-content:flex-end;gap:8px">
-          <button class="btn sm" onclick="toggleGenBox()">收起</button>
-          <button class="btn primary sm" onclick="submitGenerate()">提交生成任务</button>
+      </section>
+
+      <!-- Tab 3: Grounded Chat -->
+      <section class="panel" id="subChat">
+        <div class="card">
+          <h2><span>💬 严格基于本笔记本来源的对话 (Grounded Chat)</span></h2>
+          <div class="prompt-chips">
+            <button type="button" class="prompt-chip" onclick="usePromptChip('请系统梳理本笔记本全部来源的核心概念框架、关键结论与适用边界。')">📌 总结全部核心框架</button>
+            <button type="button" class="prompt-chip" onclick="usePromptChip('请提炼本笔记本中最容易混淆的重难点，并给出对比表格和记忆要点。')">🎯 提炼重难点与对比</button>
+            <button type="button" class="prompt-chip" onclick="usePromptChip('基于所有来源，请输出一份可直接落地执行的分步骤行动清单与风险检查项。')">📋 输出行动清单</button>
+            <button type="button" class="prompt-chip" onclick="usePromptChip('请列出本笔记本每份核心来源各自的关键论点，以及它们之间的逻辑关联。')">🔍 梳理来源知识脉络</button>
+          </div>
+          <div class="form-grid">
+            <label class="full">提问内容（支持 Ctrl+Enter 快速发送）<textarea id="chatQuestion" rows="3" placeholder="例如：请结合本笔记本所有来源，梳理核心模块边界、配额策略与注意事项。" onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();sendChat();}"></textarea></label>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px">
+            <div style="display:flex;gap:12px;flex-wrap:wrap">
+              <label style="font-size:12.5px;display:flex;align-items:center;gap:5px"><input type="checkbox" id="chatSaveNote"> 同时存为 Notebook 内部 Note</label>
+              <label style="font-size:12.5px;display:flex;align-items:center;gap:5px"><input type="checkbox" id="chatSaveMd" checked> 自动导出 .md 到 Drive Hub</label>
+            </div>
+            <button class="btn primary" id="btnSendChat" onclick="sendChat()">发送提问</button>
+          </div>
+          <div class="chat-log" id="chatLog"></div>
         </div>
-      </div>
-      <div class="filter-pills" id="studioFilterPills"></div>
-      <div class="art-grid" id="artifactsGrid"></div>
-    </div>
-  </section>
+      </section>
 
-  <!-- Tab 2: Sources & Quick Ingest -->
-  <section class="panel" id="subSources">
-    <div class="card">
-      <h2>
-        <span>📄 笔记本来源清单</span>
-        <input type="search" id="srcFilterInput" placeholder="过滤来源标题..." style="padding:5px 9px;border:1px solid var(--line);border-radius:7px;font-size:12.5px" oninput="renderSources()">
-      </h2>
-      <div class="tablebox" style="margin-bottom:14px">
-        <table class="src-table">
-          <thead><tr><th>来源标题</th><th>类型</th><th>状态</th><th>字数</th><th>创建时间</th><th>链接</th></tr></thead>
-          <tbody id="sourcesBody"></tbody>
-        </table>
-      </div>
-      <h2 style="margin-top:10px"><span>➕ 快速追加网址或 Markdown 笔记到此笔记本</span></h2>
-      <div class="form-grid">
-        <label>追加网页 / YouTube URL（每行一条）<textarea id="addUrls" rows="3" placeholder="https://..."></textarea></label>
-        <label>追加内联文本 / Markdown 笔记
-          <input id="addTextTitle" placeholder="笔记标题（可选）" style="margin-bottom:5px">
-          <textarea id="addTextBody" rows="2" placeholder="粘贴笔记内容..."></textarea>
-        </label>
-      </div>
-      <div style="margin-top:10px;display:flex;justify-content:flex-end">
-        <button class="btn primary sm" id="btnIngestNb" onclick="submitNbIngest()">🚀 立即写入此笔记本</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- Tab 3: Grounded Chat -->
-  <section class="panel" id="subChat">
-    <div class="card">
-      <h2><span>💬 严格基于本笔记本来源的对话 (Grounded Chat)</span></h2>
-      <div class="form-grid">
-        <label class="full">提问内容<textarea id="chatQuestion" rows="3" placeholder="例如：请结合本笔记本所有来源，梳理核心模块边界、配额策略与注意事项。"></textarea></label>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px">
-        <div style="display:flex;gap:12px;flex-wrap:wrap">
-          <label style="font-size:12.5px;display:flex;align-items:center;gap:5px"><input type="checkbox" id="chatSaveNote"> 同时存为 Notebook 内部 Note</label>
-          <label style="font-size:12.5px;display:flex;align-items:center;gap:5px"><input type="checkbox" id="chatSaveMd" checked> 自动导出 .md 到 Drive Hub</label>
+      <!-- Tab 4: Local Tasks & Drive Archives -->
+      <section class="panel" id="subTasks">
+        <div class="card">
+          <h2>
+            <span>⚙️ 关联调度任务与本地已归档产物</span>
+            <span class="hint" id="nbTaskLiveHint"></span>
+          </h2>
+          <div class="tablebox" style="margin-bottom:14px">
+            <table class="src-table">
+              <thead><tr><th>任务ID</th><th>类型</th><th>通道 / 账号</th><th>状态</th><th>结果 / 错误</th><th>时间</th><th>操作</th></tr></thead>
+              <tbody id="nbTasksBody"></tbody>
+            </table>
+          </div>
+          <div class="tablebox">
+            <table class="src-table">
+              <thead><tr><th>类型</th><th>本地归档标题</th><th>Drive / 本地路径</th><th>归档时间</th><th>操作</th></tr></thead>
+              <tbody id="nbLocalArtsBody"></tbody>
+            </table>
+          </div>
         </div>
-        <button class="btn primary" id="btnSendChat" onclick="sendChat()">发送提问</button>
-      </div>
-      <div class="chat-log" id="chatLog"></div>
+      </section>
     </div>
-  </section>
 
-  <!-- Tab 4: Local Tasks & Drive Archives -->
-  <section class="panel" id="subTasks">
-    <div class="card">
-      <h2><span>⚙️ 关联调度任务与本地已归档产物</span></h2>
-      <div class="tablebox" style="margin-bottom:14px">
-        <table class="src-table">
-          <thead><tr><th>任务ID</th><th>类型</th><th>通道</th><th>状态</th><th>结果 / 错误</th><th>时间</th></tr></thead>
-          <tbody id="nbTasksBody"></tbody>
-        </table>
-      </div>
-      <div class="tablebox">
-        <table class="src-table">
-          <thead><tr><th>类型</th><th>本地归档标题</th><th>Drive / 本地路径</th><th>归档时间</th><th>操作</th></tr></thead>
-          <tbody id="nbLocalArtsBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </section>
+    <!-- Right Sticky Workbench Rail -->
+    <aside class="nb-rail">
+      <!-- Card 1: Studio Generator Workbench -->
+      <section class="card rail-card gen-highlight" id="genBox">
+        <h2>
+          <span>⚡ Studio 快速生成工作台</span>
+          <button type="button" class="btn sm" id="btnToggleGenFold" onclick="toggleGenFold()">收起</button>
+        </h2>
+        <div id="genBodyWrap">
+          <div class="preset-strip">
+            <button type="button" class="prompt-chip" id="btnPresetReport" onclick="quickGenPreset('report')">📄 一键简报(zh)</button>
+            <button type="button" class="prompt-chip" id="btnPresetAudio" onclick="quickGenPreset('audio')">🎙️ 一键播客(zh)</button>
+            <button type="button" class="prompt-chip" id="btnPresetSlides" onclick="quickGenPreset('slide_deck')">📊 一键PPT(zh)</button>
+            <button type="button" class="prompt-chip" id="btnPresetCine" onclick="quickGenerateCinematic()">🎥 一键电影级(en)</button>
+          </div>
+          <div class="form-grid">
+            <div class="full">
+              <div style="font-size:11.5px;color:var(--muted)">勾选组合生成类型：</div>
+              <div class="check-grid" id="genCheckGrid"></div>
+            </div>
+            <label class="full">输出语言
+              <select id="genLang">
+                <option value="zh_Hans" selected>中文（简体 · zh_Hans）</option>
+                <option value="zh_Hant">中文（繁體 · zh_Hant）</option>
+                <option value="en">English (en)</option>
+                <option value="ja">日本語 (ja)</option>
+                <option value="ko">한국어 (ko)</option>
+                <option value="es">Español (es)</option>
+                <option value="fr">Français (fr)</option>
+                <option value="de">Deutsch (de)</option>
+              </select>
+            </label>
+            <div class="full" id="genLangLockNote" style="display:none"></div>
+            <label class="full">通用聚焦指令 / 提示词（可选）<input id="genInst" placeholder="例如：突出架构取舍、核心流程与考点总结"></label>
+          </div>
+          <div id="cinematicPromptWrap" class="cinematic-box" style="display:none">
+            <h4>
+              <span>🎥 电影级视频专属提示词（固定英文 en）</span>
+              <span class="pill p-amber">默认锁定 en</span>
+            </h4>
+            <div class="prompt-chips" style="margin-bottom:6px">
+              <button type="button" class="prompt-chip" onclick="fillCinePrompt('Explain core concepts with intuitive visual metaphors and concrete step-by-step examples.')">Visual Intuition</button>
+              <button type="button" class="prompt-chip" onclick="fillCinePrompt('Focus on end-to-end architecture, key design trade-offs, and core workflow.')">Architecture</button>
+              <button type="button" class="prompt-chip" onclick="fillCinePrompt('Highlight high-frequency key takeaways, edge cases, and practical summary.')">Exam Summary</button>
+            </div>
+            <textarea id="genCinematicInst" rows="2" style="width:100%;padding:6px 8px;border:1px solid #d5c49b;border-radius:7px;font-size:12px;background:#fff;font-family:inherit" placeholder="可选：输入镜头风格/内容聚焦提示词（留空也可直接点击下方按钮生成）"></textarea>
+            <div style="margin-top:7px;display:flex;justify-content:flex-end">
+              <button type="button" class="btn primary sm" id="btnQuickCine" onclick="quickGenerateCinematic()">⚡ 一键直接生成电影级视频 (en)</button>
+            </div>
+          </div>
+          <div style="margin-top:10px;display:flex;justify-content:flex-end;gap:8px">
+            <button type="button" class="btn primary" id="btnSubmitGen" onclick="submitGenerate()" style="width:100%;justify-content:center">🚀 提交已选生成任务</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Card 2: Compact Studio Analytics -->
+      <section class="card rail-card">
+        <h2>
+          <span>📊 Studio 内容构成与占比统计</span>
+          <span class="hint" id="studioSyncTime">—</span>
+        </h2>
+        <div class="analytics-compact" id="analyticsBody">
+          <div class="donut-row">
+            <div class="donut-wrap" id="donutWrap"></div>
+            <div style="flex:1;min-width:0">
+              <div class="studio-stack" id="nbStackBar"></div>
+              <div class="hint">点击下方类别行可直接筛选左侧 Studio 列表</div>
+            </div>
+          </div>
+          <div id="breakdownTableWrap"></div>
+        </div>
+      </section>
+    </aside>
+  </div>
 </main>
 
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalBody"></div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -241,6 +362,95 @@ function safeHttpUrl(u){
   const s = String(u || "").trim();
   return (s.startsWith("https://") || s.startsWith("http://")) ? s : "";
 }
+function renderMarkdownSafe(md){
+  const text = String(md || "").replace(/\r\n/g, "\n");
+  const codeBlocks = [];
+  const withPlaceholders = text.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (_, lang, code) => {
+    const idx = codeBlocks.length;
+    codeBlocks.push(`<pre><code class="lang-${esc(lang)}">${esc(code)}</code></pre>`);
+    return `\n@@CODEBLOCK_${idx}@@\n`;
+  });
+  function inlineFmt(raw){
+    const codes = [];
+    let s = String(raw || "").replace(/`([^`\n]+)`/g, (_, c) => {
+      const idx = codes.length;
+      codes.push(`<code>${esc(c)}</code>`);
+      return `@@ICODE_${idx}@@`;
+    });
+    s = esc(s);
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_, label, url) => {
+      const safe = safeHttpUrl(url.replace(/&amp;/g, "&"));
+      return safe ? `<a href="${esc(safe)}" target="_blank" rel="noopener">${label}</a>` : label;
+    });
+    s = s.replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>");
+    s = s.replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
+    s = s.replace(/@@ICODE_(\d+)@@/g, (_, i) => codes[Number(i)] || "");
+    return s;
+  }
+  const lines = withPlaceholders.split("\n");
+  const out = [];
+  let inUl = false, inOl = false, inTable = false;
+  const closeLists = () => {
+    if(inUl){ out.push("</ul>"); inUl = false; }
+    if(inOl){ out.push("</ol>"); inOl = false; }
+    if(inTable){ out.push("</tbody></table>"); inTable = false; }
+  };
+  for(const line of lines){
+    const trim = line.trim();
+    const cbMatch = trim.match(/^@@CODEBLOCK_(\d+)@@$/);
+    if(cbMatch){ closeLists(); out.push(codeBlocks[Number(cbMatch[1])] || ""); continue; }
+    if(!trim){ closeLists(); continue; }
+    if(/^---+$/.test(trim)){ closeLists(); out.push("<hr style='border:none;border-top:1px solid var(--line);margin:12px 0'>"); continue; }
+    const hMatch = trim.match(/^(#{1,4})\s+(.+)$/);
+    if(hMatch){ closeLists(); out.push(`<h${hMatch[1].length}>${inlineFmt(hMatch[2])}</h${hMatch[1].length}>`); continue; }
+    if(trim.startsWith(">")){ closeLists(); out.push(`<blockquote>${inlineFmt(trim.replace(/^>\s?/, ""))}</blockquote>`); continue; }
+    if(trim.startsWith("|") && trim.endsWith("|")){
+      const cells = trim.slice(1, -1).split("|").map(c => c.trim());
+      if(cells.every(c => /^:?-{2,}:?$/.test(c))) continue;
+      if(!inTable){
+        closeLists();
+        inTable = true;
+        out.push(`<table><thead><tr>${cells.map(c => `<th>${inlineFmt(c)}</th>`).join("")}</tr></thead><tbody>`);
+      }else{
+        out.push(`<tr>${cells.map(c => `<td>${inlineFmt(c)}</td>`).join("")}</tr>`);
+      }
+      continue;
+    }
+    const ulMatch = trim.match(/^[-*+]\s+(.+)$/);
+    if(ulMatch){
+      if(inOl){ out.push("</ol>"); inOl = false; }
+      if(inTable){ out.push("</tbody></table>"); inTable = false; }
+      if(!inUl){ out.push("<ul>"); inUl = true; }
+      out.push(`<li>${inlineFmt(ulMatch[1])}</li>`);
+      continue;
+    }
+    const olMatch = trim.match(/^\d+\.\s+(.+)$/);
+    if(olMatch){
+      if(inUl){ out.push("</ul>"); inUl = false; }
+      if(inTable){ out.push("</tbody></table>"); inTable = false; }
+      if(!inOl){ out.push("<ol>"); inOl = true; }
+      out.push(`<li>${inlineFmt(olMatch[1])}</li>`);
+      continue;
+    }
+    closeLists();
+    out.push(`<p>${inlineFmt(trim)}</p>`);
+  }
+  closeLists();
+  return out.join("\n");
+}
+async function copyText(txt, okMsg="已复制到剪贴板"){
+  try{
+    await navigator.clipboard.writeText(String(txt || ""));
+    toast(okMsg);
+  }catch(_){ toast("复制失败，请手动选中复制", true); }
+}
+function showModal(html){ $("#modalBody").innerHTML = html; $("#overlay").classList.add("show"); }
+function closeModal(){
+  $("#overlay").classList.remove("show");
+  const body = $("#modalBody");
+  if(body) body.innerHTML = "";
+}
+document.addEventListener("keydown", e => { if(e.key === "Escape") closeModal(); });
 function toast(msg, isErr=false){
   const el = $("#toast");
   el.textContent = msg;
@@ -255,29 +465,72 @@ async function api(path, opts={}){
   return data;
 }
 
+function switchNbTab(pid){
+  document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.panel === pid));
+  document.querySelectorAll(".panel").forEach(p => p.classList.toggle("show", p.id === pid));
+}
 document.querySelectorAll(".tab").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const pid = btn.dataset.panel;
-    document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.panel === pid));
-    document.querySelectorAll(".panel").forEach(p => p.classList.toggle("show", p.id === pid));
-  });
+  btn.addEventListener("click", () => switchNbTab(btn.dataset.panel));
 });
 
 function initGenCheckGrid(){
   const kinds = [
-    ["audio","🎙️ 音频播客"],["video","🎬 视频概览"],["cinematic_video","🎥 电影级视频"],
+    ["audio","🎙️ 音频播客"],["video","🎬 视频概览"],["cinematic_video","🎥 电影级(en)"],
     ["slide_deck","📊 幻灯片"],["quiz","📝 测验题"],["flashcards","🗂️ 闪卡"],
     ["infographic","🖼️ 信息图"],["mind_map","🧠 思维导图"],["report","📄 简报文档"],
     ["study_guide","📚 学习指南"],["data_table","📈 对比表"],["chat","💬 Chat 汇总"]
   ];
   $("#genCheckGrid").innerHTML = kinds.map(([v, lbl]) =>
-    `<label class="check-item"><input type="checkbox" name="nbGenAct" value="${v}"><span>${lbl}</span></label>`
+    `<label class="check-item"><input type="checkbox" name="nbGenAct" value="${v}" onchange="onGenActChange()"><span>${lbl}</span></label>`
   ).join("");
+}
+
+function onGenActChange(){
+  const checked = Array.from(document.querySelectorAll('input[name="nbGenAct"]:checked')).map(el => el.value);
+  const hasCine = checked.includes("cinematic_video");
+  const onlyCine = hasCine && checked.length === 1;
+  const langSel = $("#genLang");
+  const lockNote = $("#genLangLockNote");
+  const cineWrap = $("#cinematicPromptWrap");
+
+  if(hasCine){
+    if(langSel){
+      if(!langSel.dataset.prevLang && langSel.value !== "en") langSel.dataset.prevLang = langSel.value;
+      if(onlyCine){
+        langSel.value = "en";
+        langSel.disabled = true;
+      }else{
+        langSel.disabled = false;
+      }
+    }
+    if(lockNote){
+      lockNote.style.display = "block";
+      lockNote.innerHTML = onlyCine
+        ? '<span class="pill p-amber">🔒 电影级视频固定使用英文 (en) 生成</span>'
+        : '<span class="pill p-amber">🔒 电影级视频自动锁定英文 (en)，其余项按所选语言生成</span>';
+    }
+    if(cineWrap) cineWrap.style.display = "block";
+  }else{
+    if(langSel){
+      langSel.disabled = false;
+      if(langSel.dataset.prevLang){
+        langSel.value = langSel.dataset.prevLang;
+        delete langSel.dataset.prevLang;
+      }
+    }
+    if(lockNote) lockNote.style.display = "none";
+    if(cineWrap) cineWrap.style.display = "none";
+  }
+}
+
+function fillCinePrompt(txt){
+  const el = $("#genCinematicInst");
+  if(el){ el.value = txt; el.focus(); }
 }
 
 function renderDonutSvg(byKind, total){
   if(!byKind || !byKind.length || !total){
-    return `<svg viewBox="0 0 180 180" width="168" height="168">
+    return `<svg viewBox="0 0 180 180" width="128" height="128">
       <circle cx="90" cy="90" r="64" fill="none" stroke="#ece8dc" stroke-width="22"/>
       <text x="90" y="88" text-anchor="middle" font-size="22" font-weight="700" fill="#747a72">0</text>
       <text x="90" y="108" text-anchor="middle" font-size="11" fill="#747a72">暂无 Studio</text>
@@ -292,7 +545,7 @@ function renderDonutSvg(byKind, total){
     offset += segLen;
     return svgSeg;
   }).join("");
-  return `<svg viewBox="0 0 180 180" width="168" height="168">
+  return `<svg viewBox="0 0 180 180" width="128" height="128">
     <circle cx="90" cy="90" r="${r}" fill="none" stroke="#ece8dc" stroke-width="22"/>
     ${arcs}
     <text x="90" y="86" text-anchor="middle" font-size="24" font-weight="800" fill="#20241f">${total}</text>
@@ -368,18 +621,30 @@ function renderAll(){
 
 function selectStudioKind(kind){
   STUDIO_FILTER = (STUDIO_FILTER === kind) ? "all" : kind;
+  switchNbTab("subStudio");
   renderArtifacts();
 }
 
 function renderArtifacts(){
   const arts = (DETAIL && DETAIL.artifacts) || [];
+  const localArts = (DETAIL && DETAIL.local_artifacts) || [];
+  const localByRemoteId = new Map();
+  for(const la of localArts){
+    if(la.remote_artifact_id && la.local_drive_path) localByRemoteId.set(String(la.remote_artifact_id), la);
+  }
   const byKind = (DETAIL && DETAIL.studio_stats && DETAIL.studio_stats.by_kind) || [];
   const pills = [`<button class="fpill ${STUDIO_FILTER === "all" ? "active" : ""}" onclick="selectStudioKind('all')">全部 (${arts.length})</button>`].concat(
     byKind.map(k => `<button class="fpill ${STUDIO_FILTER === k.kind ? "active" : ""}" onclick="selectStudioKind('${esc(k.kind)}')">${esc(k.icon)} ${esc(k.label)} (${k.count} · ${k.pct}%)</button>`)
   );
   $("#studioFilterPills").innerHTML = pills.join("");
 
-  const filtered = STUDIO_FILTER === "all" ? arts : arts.filter(a => a.kind === STUDIO_FILTER);
+  const qArt = ($("#artSearchInput") && $("#artSearchInput").value || "").trim().toLowerCase();
+  const filtered = arts.filter(a => {
+    if(STUDIO_FILTER !== "all" && a.kind !== STUDIO_FILTER) return false;
+    if(qArt && !(`${a.title || ""} ${a.id || ""} ${a.label || ""}`.toLowerCase().includes(qArt))) return false;
+    return true;
+  });
+  window._filteredArts = filtered;
   const grid = $("#artifactsGrid");
   if(!filtered.length){
     grid.innerHTML = '<div class="hint" style="grid-column:1/-1;padding:18px 0">当前筛选下暂无 Studio 产物。</div>';
@@ -387,6 +652,7 @@ function renderArtifacts(){
   }
   grid.innerHTML = filtered.map(a => {
     const extUrl = safeHttpUrl(a.url);
+    const localHit = localByRemoteId.get(String(a.id || ""));
     const metaParts = [];
     if(a.duration_seconds != null) metaParts.push(`时长 ${a.duration_seconds}s`);
     if(a.slides_count > 0) metaParts.push(`${a.slides_count} 页`);
@@ -394,16 +660,20 @@ function renderArtifacts(){
     if(a.source_ids_count > 0) metaParts.push(`引用 ${a.source_ids_count} 源`);
     const stCls = a.status === "completed" ? "p-green" : a.status === "failed" ? "p-red" : "p-amber";
     return `<div class="art-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap">
         <span class="pill" style="background:#f3f1ea;color:${esc(a.color)};border:1px solid #dfd9cb">${esc(a.icon)} ${esc(a.label)}</span>
-        <span class="pill ${stCls}">${esc(a.status)}</span>
+        <span style="display:flex;gap:4px;align-items:center">
+          ${localHit ? '<span class="pill p-green">✅ 已归档</span>' : ""}
+          <span class="pill ${stCls}">${esc(a.status)}</span>
+        </span>
       </div>
       <div class="art-title">${esc(a.title)}</div>
       <div class="hint mono">${esc(metaParts.join(" · ") || a.kind)}${a.created_at ? " · " + esc(a.created_at.slice(0, 16).replace("T", " ")) : ""}</div>
       <div class="art-foot">
         <span class="hint mono">${esc((a.id || "").slice(0, 12))}</span>
-        <div style="display:flex;gap:6px">
-          ${a.downloadable ? `<button class="btn sm" onclick="downloadArt(decodeURIComponent('${encodeURIComponent(a.id || "")}'), decodeURIComponent('${encodeURIComponent(a.kind || "")}'), this)">⬇️ 下载归档</button>` : ""}
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${localHit ? `<button class="btn primary sm" onclick="previewLocalPath(decodeURIComponent('${encodeURIComponent(localHit.local_drive_path)}'))">👁️ 预览</button>` : ""}
+          ${a.downloadable ? `<button class="btn sm" onclick="downloadArt(decodeURIComponent('${encodeURIComponent(a.id || "")}'), decodeURIComponent('${encodeURIComponent(a.kind || "")}'), this)">⬇️ ${localHit ? "更新归档" : "下载归档"}</button>` : ""}
           ${extUrl ? `<a class="btn sm" href="${esc(extUrl)}" target="_blank" rel="noopener">↗ 查看</a>` : ""}
         </div>
       </div>
@@ -428,16 +698,44 @@ function renderSources(){
   }).join("") : '<tr><td colspan="6" class="hint" style="text-align:center;padding:18px">暂无匹配来源资料</td></tr>';
 }
 
+function _nbTaskStatusPill(st){
+  const map = {
+    pending:["待调度","p-blue"], waiting_quota:["等额度","p-amber"], running:["执行中","p-green"],
+    deferred_later:["云端耗时较长","p-amber"], done:["已完成","p-green"], failed:["失败","p-red"], canceled:["已取消","p-gray"]
+  };
+  const [lbl, cls] = map[st] || [st || "未知", "p-gray"];
+  return `<span class="pill ${cls}">${esc(lbl)}</span>`;
+}
 function renderLocalTasksAndArchives(){
   const tasks = (DETAIL && DETAIL.recent_tasks) || [];
-  $("#nbTasksBody").innerHTML = tasks.length ? tasks.map(t => `<tr>
-    <td class="mono">#${t.id}</td>
-    <td class="mono">${esc(t.task_type)}</td>
-    <td class="mono">${esc(t.channel_used || "—")}</td>
-    <td><span class="pill p-blue">${esc(t.status)}</span></td>
-    <td>${esc(t.error_msg || t.result_artifact_path || t.result_text || "—")}</td>
-    <td class="mono">${esc(t.created_at)}</td>
-  </tr>`).join("") : '<tr><td colspan="6" class="hint" style="text-align:center;padding:14px">暂无通过本地调度队列下发的任务</td></tr>';
+  const hasActive = tasks.some(t => t.status === "pending" || t.status === "running");
+  const liveHint = $("#nbTaskLiveHint");
+  if(liveHint){
+    liveHint.textContent = hasActive ? "⏳ 有任务正在执行，每 5 秒自动刷新进度…" : "";
+  }
+  if(hasActive && !window._nbTaskPollTimer){
+    window._nbTaskPollTimer = setInterval(() => { loadDetail(false); }, 5000);
+  }else if(!hasActive && window._nbTaskPollTimer){
+    clearInterval(window._nbTaskPollTimer);
+    window._nbTaskPollTimer = null;
+  }
+
+  $("#nbTasksBody").innerHTML = tasks.length ? tasks.map(t => {
+    const canRetry = t.status === "failed" || t.status === "canceled";
+    const canCancel = ["pending", "waiting_quota", "deferred_later"].includes(t.status);
+    return `<tr>
+      <td class="mono">#${t.id}</td>
+      <td class="mono">${esc(t.task_type)}</td>
+      <td class="mono">${esc(t.channel_used || t.assigned_alias || "—")}</td>
+      <td>${_nbTaskStatusPill(t.status)}</td>
+      <td style="max-width:260px;word-break:break-word">${t.error_msg ? `<span style="color:var(--red)">${esc(t.error_msg)}</span>` : esc(t.result_artifact_path || t.result_text || "—")}</td>
+      <td class="mono">${esc(t.created_at)}</td>
+      <td style="white-space:nowrap">
+        ${canRetry ? `<button class="btn sm" onclick="retryNbTask(${t.id})">重试</button>` : ""}
+        ${canCancel ? `<button class="btn sm" onclick="cancelNbTask(${t.id})">取消</button>` : ""}
+      </td>
+    </tr>`;
+  }).join("") : '<tr><td colspan="7" class="hint" style="text-align:center;padding:14px">暂无通过本地调度队列下发的任务</td></tr>';
 
   const arts = (DETAIL && DETAIL.local_artifacts) || [];
   $("#nbLocalArtsBody").innerHTML = arts.length ? arts.map(a => {
@@ -449,10 +747,68 @@ function renderLocalTasksAndArchives(){
       <td class="mono" style="word-break:break-all">${esc(lp || "—")}</td>
       <td class="mono">${esc(a.created_at)}</td>
       <td style="white-space:nowrap">
-        ${lp ? `<button class="btn sm" onclick="revealLocalPath(decodeURIComponent('${encPath}'))">📁 打开位置</button> <button class="btn sm" onclick="backupLocalToBaidu(decodeURIComponent('${encPath}'))">☁️ 存至百度网盘</button>` : '<span class="hint">—</span>'}
+        ${lp ? `<button class="btn primary sm" onclick="previewLocalPath(decodeURIComponent('${encPath}'))">👁️ 预览</button> <button class="btn sm" onclick="revealLocalPath(decodeURIComponent('${encPath}'))">📁 目录</button> <button class="btn sm" onclick="backupLocalToBaidu(decodeURIComponent('${encPath}'))">☁️ 百度盘</button>` : '<span class="hint">—</span>'}
       </td>
     </tr>`;
   }).join("") : '<tr><td colspan="5" class="hint" style="text-align:center;padding:14px">暂无本地已下载归档的产物</td></tr>';
+}
+async function retryNbTask(id){
+  try{
+    await api(`/api/tasks/${id}/retry`, {method: "POST"});
+    await api("/api/tasks/tick", {method: "POST"}).catch(() => {});
+    toast("已重新入队并立即调度 #" + id);
+    await loadDetail(false);
+  }catch(e){ toast(e.message, true); }
+}
+async function cancelNbTask(id){
+  try{
+    await api(`/api/tasks/${id}/cancel`, {method: "POST"});
+    toast("已取消任务 #" + id);
+    await loadDetail(false);
+  }catch(e){ toast(e.message, true); }
+}
+
+function renderLocalPreviewBody(d, mode="rendered"){
+  const kind = d.preview_kind || (d.is_binary ? "binary" : "text");
+  const rawUrl = d.raw_url || "";
+  if(kind === "image" && rawUrl) return `<div class="media-box"><img src="${esc(rawUrl)}" alt="${esc(d.name)}"></div>`;
+  if(kind === "pdf" && rawUrl) return `<iframe src="${esc(rawUrl)}" style="width:100%;height:68vh;border:1px solid var(--line);border-radius:8px;background:#fff"></iframe>`;
+  if(kind === "audio" && rawUrl) return `<div style="padding:26px 16px;background:#faf8f3;border:1px solid var(--line);border-radius:10px;text-align:center"><div style="font-weight:700;margin-bottom:12px">🎙️ ${esc(d.name)}</div><audio controls style="width:100%" src="${esc(rawUrl)}"></audio></div>`;
+  if(kind === "video" && rawUrl) return `<div class="media-box"><video controls style="max-width:100%;max-height:66vh" src="${esc(rawUrl)}"></video></div>`;
+  if(kind === "markdown" && mode === "rendered") return `<div class="md-view scroll">${renderMarkdownSafe(d.content)}</div>`;
+  return `<pre class="code-pre">${esc(d.content)}</pre>`;
+}
+window._nbPreviewMode = "rendered";
+function toggleNbPreviewMode(){
+  window._nbPreviewMode = (window._nbPreviewMode === "rendered") ? "raw" : "rendered";
+  const d = window._nbPreviewDoc;
+  if(!d) return;
+  const body = $("#nbLocalPreviewWrap");
+  if(body) body.innerHTML = renderLocalPreviewBody(d, window._nbPreviewMode);
+  const btn = $("#btnNbToggleMd");
+  if(btn) btn.textContent = window._nbPreviewMode === "rendered" ? "📝 原始文本" : "📖 排版阅读";
+}
+async function previewLocalPath(path){
+  try{
+    const d = await api(`/api/workspace/preview-path?path=${encodeURIComponent(path)}`);
+    window._nbPreviewDoc = d;
+    window._nbPreviewMode = "rendered";
+    const encPath = encodeURIComponent(d.full_path);
+    const isMd = d.preview_kind === "markdown";
+    const hasTextCopy = !d.is_binary && typeof d.content === "string";
+    showModal(`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+        <h3 style="margin:0">📄 本地内容查看器 · ${esc(d.name)}</h3>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${isMd ? `<button class="btn sm" id="btnNbToggleMd" onclick="toggleNbPreviewMode()">📝 原始文本</button>` : ""}
+          ${hasTextCopy ? `<button class="btn sm" onclick="copyText(window._nbPreviewDoc ? window._nbPreviewDoc.content : '')">📋 复制全文</button>` : ""}
+          <button class="btn sm" onclick="revealLocalPath(decodeURIComponent('${encPath}'))">📁 打开位置</button>
+          <button class="btn sm" onclick="backupLocalToBaidu(decodeURIComponent('${encPath}'))">☁️ 存至百度盘</button>
+        </div>
+      </div>
+      <div class="hint mono" style="margin-bottom:8px;word-break:break-all">${esc(d.full_path)} · ${esc(d.mime_type)} ${d.truncated ? "(文本预览截取前 64KB)" : ""}</div>
+      <div id="nbLocalPreviewWrap">${renderLocalPreviewBody(d, "rendered")}</div>
+      <div class="modal-actions"><button class="btn" onclick="closeModal()">关闭 (Esc)</button></div>`);
+  }catch(e){ toast(e.message, true); }
 }
 
 async function revealLocalPath(path){
@@ -471,42 +827,115 @@ async function backupLocalToBaidu(path){
   }catch(e){ toast("上传百度网盘失败（请先在主控台「网盘互通」登录百度网盘）: " + e.message, true); }
 }
 
+function toggleGenFold(){
+  const wrap = $("#genBodyWrap");
+  const btn = $("#btnToggleGenFold");
+  if(!wrap) return;
+  const hidden = wrap.style.display === "none";
+  wrap.style.display = hidden ? "block" : "none";
+  if(btn) btn.textContent = hidden ? "收起" : "展开";
+}
 function toggleGenBox(){
   const box = $("#genBox");
-  box.style.display = box.style.display === "none" ? "block" : "none";
+  const wrap = $("#genBodyWrap");
+  const btn = $("#btnToggleGenFold");
+  if(wrap && wrap.style.display === "none"){
+    wrap.style.display = "block";
+    if(btn) btn.textContent = "收起";
+  }
+  if(box){
+    box.style.display = "block";
+    box.scrollIntoView({behavior: "smooth", block: "nearest"});
+    box.classList.add("pulse");
+    setTimeout(() => box.classList.remove("pulse"), 900);
+  }
+}
+
+async function quickGenPreset(kind){
+  const inst = ($("#genInst") && $("#genInst").value || "").trim() || null;
+  try{
+    const r = await api(`/api/notebooks/${NB_ID}/generate`, {
+      method: "POST",
+      body: JSON.stringify({actions: [kind], language: "zh_Hans", instructions: inst})
+    });
+    api("/api/tasks/tick", {method: "POST"}).catch(() => {});
+    switchNbTab("subTasks");
+    toast(`已一键下发 ${kind} (zh_Hans · ${r.batch_id})`);
+    await loadDetail(false);
+  }catch(e){ toast(e.message, true); }
+}
+
+async function quickGenerateCinematic(){
+  const cineInst = ($("#genCinematicInst") && $("#genCinematicInst").value || "").trim();
+  const genInst = ($("#genInst") && $("#genInst").value || "").trim();
+  const inst = cineInst || genInst || null;
+  const btn = $("#btnQuickCine");
+  if(btn){ btn.disabled = true; btn.textContent = "提交中…"; }
+  try{
+    const r = await api(`/api/notebooks/${NB_ID}/generate`, {
+      method: "POST",
+      body: JSON.stringify({
+        actions: ["cinematic_video"],
+        language: "en",
+        instructions: genInst || null,
+        cinematic_instructions: inst
+      })
+    });
+    api("/api/tasks/tick", {method: "POST"}).catch(() => {});
+    switchNbTab("subTasks");
+    toast(`已一键下发电影级视频 (固定 en · ${r.batch_id})`);
+    await loadDetail(false);
+  }catch(e){ toast(e.message, true); }
+  finally{
+    if(btn){ btn.disabled = false; btn.textContent = "⚡ 一键直接生成电影级视频 (en)"; }
+  }
 }
 
 async function submitGenerate(){
   const acts = Array.from(document.querySelectorAll('input[name="nbGenAct"]:checked')).map(el => el.value);
   if(!acts.length) return toast("请至少勾选一种要生成的 Studio 类型", true);
+  const btn = $("#btnSubmitGen");
+  if(btn){ btn.disabled = true; btn.textContent = "提交调度中…"; }
   try{
+    const onlyCine = acts.length === 1 && acts[0] === "cinematic_video";
+    const langVal = onlyCine ? "en" : (($("#genLang").value || "zh_Hans").trim());
+    const genInst = ($("#genInst") && $("#genInst").value || "").trim() || null;
+    const cineInst = ($("#genCinematicInst") && $("#genCinematicInst").value || "").trim() || null;
     const r = await api(`/api/notebooks/${NB_ID}/generate`, {
       method: "POST",
       body: JSON.stringify({
         actions: acts,
-        language: ($("#genLang").value || "zh-Hans").trim(),
-        instructions: ($("#genInst").value || "").trim() || null
+        language: langVal,
+        instructions: genInst,
+        cinematic_instructions: cineInst
       })
     });
-    toggleGenBox();
+    api("/api/tasks/tick", {method: "POST"}).catch(() => {});
+    switchNbTab("subTasks");
     toast(`已将 ${r.created_count} 个生成任务加入调度队列 (${r.batch_id})`);
     await loadDetail(false);
   }catch(e){ toast(e.message, true); }
+  finally{
+    if(btn){ btn.disabled = false; btn.textContent = "🚀 提交已选生成任务"; }
+  }
 }
 
 async function submitNbIngest(){
   const urls = ($("#addUrls").value || "").split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const filePaths = ($("#addLocalFiles") && $("#addLocalFiles").value || "").split(/\r?\n/).map(s => s.trim()).filter(Boolean);
   const title = ($("#addTextTitle").value || "").trim();
   const txt = ($("#addTextBody").value || "").trim();
-  if(!urls.length && !txt) return toast("请输入至少一条网址或笔记内容", true);
+  if(!urls.length && !filePaths.length && !txt) return toast("请输入至少一条网址、本地路径或笔记内容", true);
   const btn = $("#btnIngestNb");
   btn.disabled = true; btn.textContent = "写入中…";
   try{
     const r = await api(`/api/notebooks/${NB_ID}/ingest`, {
       method: "POST",
-      body: JSON.stringify({urls, inline_title: title || null, inline_text: txt || null})
+      body: JSON.stringify({urls, file_paths: filePaths, inline_title: title || null, inline_text: txt || null})
     });
-    $("#addUrls").value = ""; $("#addTextTitle").value = ""; $("#addTextBody").value = "";
+    $("#addUrls").value = "";
+    if($("#addLocalFiles")) $("#addLocalFiles").value = "";
+    $("#addTextTitle").value = ""; $("#addTextBody").value = "";
     toast(`写入完成：成功 ${r.success_count} 项`);
     await loadDetail(false);
   }catch(e){ toast(e.message, true); }
@@ -525,7 +954,42 @@ async function downloadArt(artId, kind, btn){
   }catch(e){ toast(e.message, true); }
   finally{ if(btn){ btn.disabled = false; btn.textContent = "⬇️ 下载归档"; } }
 }
+async function batchDownloadFilteredArts(){
+  const list = (window._filteredArts || []).filter(a => a.downloadable);
+  if(!list.length) return toast("当前列表没有可下载归档的 Studio 产物（交互微应用/待生成项暂不支持导出）", true);
+  const btn = $("#btnBatchDlArts");
+  if(btn){ btn.disabled = true; }
+  let ok = 0, fail = 0;
+  for(let i = 0; i < list.length; i++){
+    const a = list[i];
+    if(btn) btn.textContent = `归档中 (${i + 1}/${list.length})…`;
+    try{
+      await api(`/api/notebooks/${NB_ID}/artifacts/${encodeURIComponent(a.id)}/download`, {
+        method: "POST",
+        body: JSON.stringify({kind: a.kind})
+      });
+      ok++;
+    }catch(_){ fail++; }
+  }
+  if(btn){ btn.disabled = false; btn.textContent = "⬇️ 批量归档可下载项"; }
+  await loadDetail(false);
+  toast(`批量归档完成：成功 ${ok} 项${fail ? `，失败 ${fail} 项` : ""}`, fail > 0 && ok === 0);
+}
 
+function usePromptChip(txt){
+  const el = $("#chatQuestion");
+  if(el){ el.value = txt; el.focus(); }
+}
+window._chatTurns = [];
+function toggleChatTurnView(idx){
+  const turn = window._chatTurns[idx];
+  const el = document.getElementById(`chatBody_${idx}`);
+  if(!turn || !el) return;
+  turn.mode = (turn.mode === "rendered") ? "raw" : "rendered";
+  el.innerHTML = turn.mode === "rendered"
+    ? `<div class="md-view">${renderMarkdownSafe(turn.answer)}</div>`
+    : `<pre class="code-pre" style="max-height:none">${esc(turn.answer)}</pre>`;
+}
 async function sendChat(){
   const q = ($("#chatQuestion").value || "").trim();
   if(!q) return toast("请输入问题", true);
@@ -540,10 +1004,20 @@ async function sendChat(){
         save_markdown_export: $("#chatSaveMd").checked
       })
     });
+    const idx = window._chatTurns.length;
+    window._chatTurns.push({ question: q, answer: r.answer || "", mode: "rendered" });
+    const encMdPath = r.saved_md_path ? encodeURIComponent(r.saved_md_path) : "";
     const turnHtml = `<div class="chat-turn">
-      <div class="chat-q">Q: ${esc(q)} <span class="pill p-blue" style="margin-left:6px">引用 ${r.references_count || 0} 处</span>${r.saved_md_path ? ` <span class="pill p-green">已归档 .md</span>` : ""}</div>
-      <div class="chat-a">${esc(r.answer || "")}</div>
-      ${r.saved_md_path ? `<div class="hint mono" style="margin-top:6px">导出路径: ${esc(r.saved_md_path)}</div>` : ""}
+      <div class="chat-q" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <span>Q: ${esc(q)} <span class="pill p-blue" style="margin-left:6px">引用 ${r.references_count || 0} 处</span>${r.saved_md_path ? ` <span class="pill p-green">已归档 .md</span>` : ""}</span>
+        <span style="display:flex;gap:5px;flex-wrap:wrap">
+          <button type="button" class="btn sm" onclick="toggleChatTurnView(${idx})">📝 排版/源码</button>
+          <button type="button" class="btn sm" onclick="copyText(window._chatTurns[${idx}] ? window._chatTurns[${idx}].answer : '')">📋 复制回答</button>
+          ${r.saved_md_path ? `<button type="button" class="btn primary sm" onclick="previewLocalPath(decodeURIComponent('${encMdPath}'))">👁️ 阅读 .md</button>` : ""}
+        </span>
+      </div>
+      <div id="chatBody_${idx}" style="margin-top:8px"><div class="md-view">${renderMarkdownSafe(r.answer || "")}</div></div>
+      ${r.saved_md_path ? `<div class="hint mono" style="margin-top:6px;display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap"><span>导出路径: ${esc(r.saved_md_path)}</span><button type="button" class="btn sm" onclick="revealLocalPath(decodeURIComponent('${encMdPath}'))">📁 打开位置</button></div>` : ""}
     </div>`;
     $("#chatLog").insertAdjacentHTML("afterbegin", turnHtml);
     $("#chatQuestion").value = "";
@@ -551,11 +1025,47 @@ async function sendChat(){
   finally{ btn.disabled = false; btn.textContent = "发送提问"; }
 }
 
+let _switcherItems = [];
+async function loadNotebookSwitcher(){
+  try{
+    const d = await api("/api/notebooks?limit=150&sort=recent");
+    _switcherItems = d.notebooks || [];
+    const bar = $("#nbSwitcherBar");
+    const sel = $("#nbQuickSelect");
+    if(!bar || !sel || !_switcherItems.length) return;
+    if(!_switcherItems.some(n => n.id === NB_ID) && DETAIL && DETAIL.notebook){
+      _switcherItems.unshift(DETAIL.notebook);
+    }
+    sel.innerHTML = _switcherItems.map(n => `<option value="${n.id}" ${n.id === NB_ID ? "selected" : ""}>${esc(n.title)} (${n.artifact_count || 0} Studio)</option>`).join("");
+    const idx = _switcherItems.findIndex(n => n.id === NB_ID);
+    const prevBtn = $("#btnPrevNb"), nextBtn = $("#btnNextNb");
+    if(prevBtn) prevBtn.disabled = idx <= 0;
+    if(nextBtn) nextBtn.disabled = idx < 0 || idx >= _switcherItems.length - 1;
+    bar.style.display = "inline-flex";
+  }catch(_){}
+}
+function jumpQuickNb(){
+  const sel = $("#nbQuickSelect");
+  const target = Number(sel && sel.value);
+  if(target && target !== NB_ID) window.location.href = `/notebooks/${target}`;
+}
+function stepNotebook(delta){
+  const idx = _switcherItems.findIndex(n => n.id === NB_ID);
+  if(idx < 0) return;
+  const next = _switcherItems[idx + delta];
+  if(next) window.location.href = `/notebooks/${next.id}`;
+}
+function copyNbUuid(){
+  const txt = ($("#nbUuidSpan") && $("#nbUuidSpan").textContent || "").trim();
+  if(txt) copyText(txt, "已复制笔记本远程 UUID");
+}
+
 async function loadDetail(forceRefresh=false){
   if(!NB_ID) return;
   try{
     DETAIL = await api(`/api/notebooks/${NB_ID}${forceRefresh ? "?refresh=true" : ""}`);
     renderAll();
+    loadNotebookSwitcher();
   }catch(e){
     $("#nbTitle").textContent = "加载失败";
     toast(e.message, true);

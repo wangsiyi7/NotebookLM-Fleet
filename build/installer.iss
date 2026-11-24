@@ -1,7 +1,7 @@
 ; Inno Setup 6 x64 Installer Script for NotebookLM-Fleet
 
 #ifndef MyAppVersion
-  #define MyAppVersion "0.3.1"
+  #define MyAppVersion "0.4.0"
 #endif
 
 #define MyAppName "NotebookLM-Fleet"
@@ -46,6 +46,7 @@ Source: "..\dist\NotebookLM-Fleet\*"; DestDir: "{app}"; Flags: ignoreversion rec
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{group}\{#MyAppName} (Local Web Server)"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--server-only --port 8765"
 Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 

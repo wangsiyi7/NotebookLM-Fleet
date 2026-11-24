@@ -16,66 +16,76 @@ html{-webkit-text-size-adjust:100%}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.55}
 
 /* Top Bar */
-.top-wrap{background:var(--card);border-bottom:2px solid var(--ink);padding:12px 18px}
-.top{max-width:1680px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.brand h1{font-family:"Songti SC","STSong","SimSun",serif;font-size:22px;letter-spacing:1.2px}
-.brand .sub{color:var(--muted);font-size:12px;margin-top:2px}
-.top-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.save{font-size:12px;padding:3px 10px;border-radius:999px;white-space:nowrap}
+.top-wrap{background:var(--card);border-bottom:2px solid var(--ink);padding:8px 18px}
+.top{max-width:1680px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.brand h1{font-family:"Songti SC","STSong","SimSun",serif;font-size:18.5px;letter-spacing:.8px;line-height:1.25}
+.brand .sub{color:var(--muted);font-size:11.5px;margin-top:1px}
+.top-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.save{font-size:11.5px;padding:3px 9px;border-radius:999px;white-space:nowrap}
 .save.ok{background:var(--accent-soft);color:var(--accent)}
 .save.warn{background:#fbeae4;color:var(--red)}
 
-.btn{appearance:none;border:1px solid var(--ink);background:var(--card);color:var(--ink);padding:6px 12px;border-radius:8px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.btn{appearance:none;border:1px solid var(--ink);background:var(--card);color:var(--ink);padding:5px 11px;border-radius:8px;font-size:12.5px;cursor:pointer;white-space:nowrap}
 .btn:hover{background:#f0ede4}
 .btn:disabled{opacity:.55;cursor:not-allowed}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn.primary:hover{background:#0e5a50}
-.btn.sm{padding:4px 8px;font-size:11.5px;border-radius:6px;border-color:#c9c4b7}
+.btn.sm{padding:3.5px 8px;font-size:11.5px;border-radius:6px;border-color:#c9c4b7}
 .btn.danger{border-color:var(--red);color:var(--red)}
 
 /* Two-column Workspace + Main Shell */
-.shell{max-width:1680px;margin:0 auto;display:flex;align-items:stretch;min-height:calc(100vh - 76px)}
-.sidebar{width:320px;flex:0 0 320px;background:var(--sidebar-bg);border-right:1px solid var(--line);display:flex;flex-direction:column;height:calc(100vh - 76px);position:sticky;top:0}
+.shell{max-width:1680px;margin:0 auto;display:flex;align-items:stretch;min-height:calc(100vh - 60px)}
+.sidebar{width:272px;flex:0 0 272px;background:var(--sidebar-bg);border-right:1px solid var(--line);display:flex;flex-direction:column;height:calc(100vh - 60px);position:sticky;top:0}
 .sidebar.collapsed{display:none}
-.sb-head{padding:12px 12px 8px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
-.sb-title{font-weight:700;font-size:13.5px;display:flex;justify-content:space-between;align-items:center}
+.sidebar.wide{width:420px;flex:0 0 420px}
+.sb-head{padding:10px 10px 7px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.sb-title{font-weight:700;font-size:13px;display:flex;justify-content:space-between;align-items:center}
 .root-pills{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
-.root-pill{border:1px solid var(--line);background:#fff;color:var(--muted);padding:5px 4px;border-radius:6px;font-size:11.5px;cursor:pointer;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.root-pill{border:1px solid var(--line);background:#fff;color:var(--muted);padding:4px 4px;border-radius:6px;font-size:11px;cursor:pointer;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .root-pill.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
 .sb-search{display:flex;gap:5px}
-.sb-search input{flex:1;padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px;background:#fff}
-.sb-crumb{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)}
+.sb-search input{flex:1;padding:4px 7px;border:1px solid var(--line);border-radius:6px;font-size:12px;background:#fff}
+.sb-crumb{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
 .sb-crumb-path{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:rtl;text-align:left;flex:1}
-.sb-list{flex:1;overflow:auto;padding:6px 8px;display:flex;flex-direction:column;gap:2px}
-.ws-row{display:flex;align-items:center;gap:6px;padding:5px 6px;border-radius:6px;font-size:12.5px}
+.sb-list{flex:1;overflow:auto;padding:4px 6px;display:flex;flex-direction:column;gap:1px}
+.ws-row{display:flex;align-items:center;gap:5px;padding:4px 6px;border-radius:6px;font-size:12px}
 .ws-row:hover{background:#ece8dc}
 .ws-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
 .ws-name.dir{font-weight:600;color:var(--ink)}
 .ws-meta{font-size:11px;color:var(--muted);white-space:nowrap}
-.ws-eye{border:none;background:none;cursor:pointer;color:var(--blue);font-size:12px;padding:1px 4px}
-.sb-basket{border-top:1px solid var(--line);background:#fff;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
-.basket-chips{display:flex;flex-wrap:wrap;gap:4px;max-height:84px;overflow:auto}
+.ws-eye{border:none;background:none;cursor:pointer;color:var(--blue);font-size:11.5px;padding:1px 4px}
+.sb-basket{border-top:1px solid var(--line);background:#fff;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.basket-chips{display:flex;flex-wrap:wrap;gap:4px;max-height:74px;overflow:auto}
 .b-chip{display:inline-flex;align-items:center;gap:4px;background:var(--accent-soft);color:var(--accent);padding:2px 7px;border-radius:999px;font-size:11px;max-width:100%}
-.b-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:190px}
+.b-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px}
 .b-chip button{border:none;background:none;color:var(--red);cursor:pointer;font-weight:700;font-size:12px}
 
-.main-pane{flex:1;min-width:0;padding:16px 20px 80px}
+.main-pane{flex:1;min-width:0;padding:12px 18px 60px}
 
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:11px 13px}
-.stat .label{font-size:12px;color:var(--muted)}
-.stat .num{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
-.stat .hint{font-size:11.5px;color:var(--muted);margin-top:2px}
+.stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;background:var(--card);border:1px solid var(--line);border-radius:11px;overflow:hidden;margin-bottom:12px}
+.stat{background:transparent;border:none;border-right:1px solid var(--line);border-radius:0;padding:8px 12px;min-width:0}
+.stat:last-child{border-right:none}
+.stat .label{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat .num{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:1px;line-height:1.25}
+.stat .hint{font-size:11px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:1180px){.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.stat{border-bottom:1px solid var(--line)}.stat:nth-child(3n){border-right:none}.stat:nth-last-child(-n+3){border-bottom:none}}
 
-.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto}
-.tab{background:none;border:none;padding:9px 14px;font-size:13.5px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
-.tab.active{color:var(--ink);font-weight:600;border-bottom-color:var(--accent)}
+.tabs{display:inline-flex;flex-wrap:wrap;gap:4px;background:#ece8dc;padding:4px;border-radius:10px;border-bottom:none;margin-bottom:12px;max-width:100%;overflow:visible}
+.tab{background:none;border:none;padding:6px 11px;font-size:12.5px;color:var(--muted);cursor:pointer;border-radius:7px;white-space:nowrap;font-weight:500}
+.tab.active{background:#fff;color:var(--ink);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .panel{display:none}
 .panel.show{display:block}
 
-.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
-.toolbar input[type=search], .toolbar input[type=text], .toolbar select{padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);font-size:13px}
+.toolbar{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+.toolbar input[type=search], .toolbar input[type=text], .toolbar select{padding:5px 9px;border:1px solid var(--line);border-radius:8px;background:var(--card);font-size:12.5px}
 .hint{font-size:12px;color:var(--muted)}
+.filter-pills{display:flex;gap:5px;flex-wrap:wrap}
+.fpill{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:4px 10px;border-radius:999px;font-size:12px;cursor:pointer}
+.fpill.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.cinematic-box{border:1px solid #d5c49b;background:#fffbf2;border-radius:9px;padding:9px 11px;margin-top:4px}
+.prompt-chips{display:flex;gap:5px;flex-wrap:wrap;margin:5px 0}
+.prompt-chip{border:1px solid var(--line);background:#fff;color:var(--ink);padding:3px 9px;border-radius:999px;font-size:11.5px;cursor:pointer}
+.prompt-chip:hover{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 
 .acct-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(335px,1fr));gap:12px}
 .acct-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
@@ -120,12 +130,11 @@ tbody tr:hover{background:#fbfaf6}
 .link.danger{color:var(--red)}
 .ops{white-space:nowrap}
 
-.card-box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:15px;margin-bottom:14px}
-.card-box h3{font-size:15px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.card-box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:11px}
+.card-box h3{font-size:14.5px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:1100px){.two-col{grid-template-columns:1fr}}
-@media (max-width:920px){.tabs{flex-wrap:wrap;gap:4px;overflow-x:visible}.tab{padding:7px 10px;font-size:13px}}
-@media (max-width:860px){.shell{flex-direction:column}.sidebar{width:100%;flex:none;height:360px;position:static;border-right:none;border-bottom:1px solid var(--line)}}
+@media (max-width:860px){.shell{flex-direction:column}.sidebar{width:100%;flex:none;height:340px;position:static;border-right:none;border-bottom:1px solid var(--line)}}
 
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
 .form-grid label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:4px}
@@ -180,24 +189,54 @@ tbody tr:hover{background:#fbfaf6}
 .path-row input{flex:1;min-width:0}
 .prog-wrap{height:7px;background:#ece8dc;border-radius:999px;overflow:hidden;min-width:90px}
 .prog-bar{height:100%;background:var(--accent);border-radius:999px;transition:width .25s ease}
+
+/* Local Content Reader & Rich Preview Polish */
+.stat.clickable{cursor:pointer;transition:background .15s}
+.stat.clickable:hover{background:#faf8f3}
+.modal.wide{max-width:980px}
+.md-view{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 22px;max-height:66vh;overflow:auto;line-height:1.72;font-size:14px;color:var(--ink)}
+.md-view h1,.md-view h2,.md-view h3,.md-view h4{font-family:"Songti SC","STSong",serif;margin:14px 0 8px;color:var(--ink);line-height:1.35}
+.md-view h1{font-size:20px;border-bottom:1px solid var(--line);padding-bottom:6px;margin-top:4px}
+.md-view h2{font-size:17px}
+.md-view h3{font-size:15px}
+.md-view p{margin:8px 0}
+.md-view ul,.md-view ol{padding-left:22px;margin:8px 0}
+.md-view li{margin:3px 0}
+.md-view blockquote{border-left:3px solid var(--accent);background:#f7fbf9;padding:8px 12px;margin:10px 0;color:#2f3a35;border-radius:0 6px 6px 0}
+.md-view code{background:#f3f1ea;padding:1px 5px;border-radius:4px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
+.md-view pre{background:#1c1f1b;color:#e7ebe5;padding:12px 14px;border-radius:8px;overflow:auto;margin:10px 0;font-size:12px}
+.md-view pre code{background:none;padding:0;color:inherit}
+.md-view table{min-width:0;width:100%;margin:10px 0;border-collapse:collapse;border:1px solid var(--line)}
+.md-view th,.md-view td{border:1px solid var(--line);padding:6px 10px;font-size:12.5px;text-align:left}
+.md-view a{color:var(--blue);text-decoration:underline;word-break:break-all}
+.media-box{background:#141714;border-radius:10px;padding:14px;display:flex;justify-content:center;align-items:center;max-height:70vh;overflow:auto}
+.media-box img{max-width:100%;max-height:66vh;border-radius:6px;object-fit:contain}
+.studio-seg.clickable{cursor:pointer}
+.studio-seg.clickable:hover{opacity:.82}
+.st-leg-item.clickable{cursor:pointer;padding:3px 9px;border-radius:999px;border:1px solid transparent;transition:background .15s}
+.st-leg-item.clickable:hover{background:#f0ede4}
+.st-leg-item.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.view-switch{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--card)}
+.view-switch button{border:none;background:none;padding:5px 10px;font-size:12px;cursor:pointer;color:var(--muted)}
+.view-switch button.active{background:var(--accent);color:#fff;font-weight:600}
 </style>
 </head>
 <body>
 <div class="top-wrap">
   <div class="top">
     <div class="brand">
-      <h1>NotebookLM Fleet · 工作区中枢与官方 API / MCP</h1>
-      <div class="sub">左侧全工作区直调 (本地工作目录 + 云盘资料库) · 多账号 Ultra / Pro / Free 算力调度 · 官方 Gemini Notebook v1 &amp; Remote MCP</div>
+      <h1 title="左侧全工作区直调 · 多账号 Ultra/Pro/Free 算力调度 · 官方 Gemini Notebook v1 & MCP">NotebookLM Fleet · 工作区中枢</h1>
+      <div class="sub">多账号算力调度 · 全库笔记本 / Studio / 双向云盘 / 官方 API &amp; MCP</div>
     </div>
     <div class="top-actions">
-      <button class="btn sm" onclick="toggleSidebar()">📁 切换左侧工作区</button>
+      <button class="btn sm" onclick="toggleSidebar()">📁 工作区</button>
       <span class="pill p-blue" id="sysModeBadge" style="display:none">🪟 Windows x64</span>
       <button class="btn sm" id="btnRevealDataDir" onclick="revealDataDir()" style="display:none">📂 数据目录</button>
-      <span class="save ok" id="connBadge">● 已连接本地服务</span>
-      <button class="btn primary" onclick="pollAll()">全部测额</button>
-      <button class="btn" onclick="syncAllNotebooks()">同步远程笔记本</button>
-      <button class="btn" onclick="openAccountModal()">＋ 新增账号</button>
-      <button class="btn" onclick="exportBackupJson()">导出备份</button>
+      <span class="save ok" id="connBadge">● 已连接</span>
+      <button class="btn primary sm" onclick="pollAll()">全部测额</button>
+      <button class="btn sm" onclick="syncAllNotebooks()">同步笔记本</button>
+      <button class="btn sm" onclick="openAccountModal()">＋ 账号</button>
+      <button class="btn sm" onclick="exportBackupJson()">备份</button>
     </div>
   </div>
 </div>
@@ -208,7 +247,10 @@ tbody tr:hover{background:#fbfaf6}
     <div class="sb-head">
       <div class="sb-title">
         <span>📂 工作目录与云盘浏览器</span>
-        <button class="btn sm" onclick="loadWorkspaceTree()">刷新</button>
+        <div style="display:flex;gap:4px">
+          <button class="btn sm" onclick="toggleSidebarWidth()" title="切换侧边栏宽度">↔</button>
+          <button class="btn sm" onclick="loadWorkspaceTree()">刷新</button>
+        </div>
       </div>
       <div class="root-pills" id="wsRootPills">
         <button class="root-pill active" data-root="workspace" onclick="switchWsRoot('workspace')" title="本地工作根目录">工作目录</button>
@@ -221,7 +263,11 @@ tbody tr:hover{background:#fbfaf6}
       </div>
       <div class="sb-crumb">
         <span class="sb-crumb-path mono" id="wsBreadcrumb">加载中…</span>
-        <button class="link" onclick="switchWsRoot(STATE.ws.root)">根目录</button>
+        <span style="display:inline-flex;gap:4px;white-space:nowrap">
+          <button class="link" onclick="selectAllWsFiles()" title="全选当前目录可见文件">全选</button>
+          <button class="link" onclick="revealCurrentWsDir()" title="在资源管理器中打开当前目录">打开</button>
+          <button class="link" onclick="switchWsRoot(STATE.ws.root)">根</button>
+        </span>
       </div>
     </div>
     <div class="sb-list" id="wsList">
@@ -241,23 +287,23 @@ tbody tr:hover{background:#fbfaf6}
   <!-- RIGHT MAIN PANEL -->
   <main class="main-pane">
     <div class="stats">
-      <div class="stat"><div class="label">平均 5 小时剩余</div><div class="num" id="kpi5h">—</div><div class="hint">健康账号均值</div></div>
-      <div class="stat"><div class="label">平均周额度剩余</div><div class="num" id="kpiWeek">—</div><div class="hint">滚动周上限余量</div></div>
-      <div class="stat"><div class="label">健康账号 / 总数</div><div class="num" id="kpiAccts">0 / 0</div><div class="hint" id="kpiOauthHint">官方 API 待配置</div></div>
-      <div class="stat"><div class="label">队列 / 运行中</div><div class="num" id="kpiTasks">0 / 0</div><div class="hint" id="kpiDoneHint">已完成 0 · 延时 0</div></div>
-      <div class="stat"><div class="label">远程笔记本 / Studio</div><div class="num" id="kpiNotebooks">0 / 0</div><div class="hint" id="kpiNbHint">点击同步可统计全池占比</div></div>
-      <div class="stat"><div class="label">主题 / 云盘产物</div><div class="num" id="kpiTopics">0 / 0</div><div class="hint">已归档至 NLM_Hub</div></div>
+      <div class="stat clickable" onclick="switchTab('panelDash')"><div class="label">平均 5 小时剩余</div><div class="num" id="kpi5h">—</div><div class="hint">健康账号均值</div></div>
+      <div class="stat clickable" onclick="switchTab('panelDash')"><div class="label">平均周额度剩余</div><div class="num" id="kpiWeek">—</div><div class="hint">滚动周上限余量</div></div>
+      <div class="stat clickable" onclick="switchTab('panelDash')"><div class="label">健康账号 / 总数</div><div class="num" id="kpiAccts">0 / 0</div><div class="hint" id="kpiOauthHint">官方 API 待配置</div></div>
+      <div class="stat clickable" onclick="switchTab('panelTasks')"><div class="label">队列 / 运行中</div><div class="num" id="kpiTasks">0 / 0</div><div class="hint" id="kpiDoneHint">已完成 0 · 延时 0</div></div>
+      <div class="stat clickable" onclick="switchTab('panelNotebooks')"><div class="label">远程笔记本 / Studio</div><div class="num" id="kpiNotebooks">0 / 0</div><div class="hint" id="kpiNbHint">点击直达笔记本全景</div></div>
+      <div class="stat clickable" onclick="switchTab('panelTopics')"><div class="label">主题 / 云盘产物</div><div class="num" id="kpiTopics">0 / 0</div><div class="hint">已归档至 NLM_Hub</div></div>
     </div>
 
     <div class="tabs">
-      <button class="tab active" data-panel="panelDash">额度总览</button>
-      <button class="tab" data-panel="panelNotebooks">📚 笔记本全景与 Studio <span class="pill p-green" id="tabNbCount" style="margin-left:4px;display:none">0</span></button>
-      <button class="tab" data-panel="panelBridge">☁️ 网盘互通 (百度 ⇄ Google) <span class="pill p-blue" id="tabBridgeCount" style="margin-left:4px;display:none">0</span></button>
-      <button class="tab" data-panel="panelLab">官方 API &amp; MCP 实验室</button>
-      <button class="tab" data-panel="panelTopics">主题与批量协作</button>
-      <button class="tab" data-panel="panelTasks">任务调度队列</button>
-      <button class="tab" data-panel="panelDrive">Google 云盘中枢</button>
-      <button class="tab" data-panel="panelLedger">账号台账与策略</button>
+      <button class="tab active" data-panel="panelDash">⚡ 额度总览</button>
+      <button class="tab" data-panel="panelNotebooks">📚 笔记本 <span class="pill p-green" id="tabNbCount" style="margin-left:3px;display:none">0</span></button>
+      <button class="tab" data-panel="panelBridge">☁️ 网盘互通 <span class="pill p-blue" id="tabBridgeCount" style="margin-left:3px;display:none">0</span></button>
+      <button class="tab" data-panel="panelLab">🔬 API &amp; MCP</button>
+      <button class="tab" data-panel="panelTopics">🗂️ 主题批量</button>
+      <button class="tab" data-panel="panelTasks">⚙️ 任务队列</button>
+      <button class="tab" data-panel="panelDrive">💾 云盘中枢</button>
+      <button class="tab" data-panel="panelLedger">🔧 台账策略</button>
     </div>
 
     <!-- 1. Dashboard -->
@@ -270,19 +316,19 @@ tbody tr:hover{background:#fbfaf6}
 
     <!-- 1.5 Notebook Panorama & Studio Proportion Analytics -->
     <section class="panel" id="panelNotebooks">
-      <div class="studio-hero" id="nbGlobalStudioBox">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <div class="studio-hero" id="nbGlobalStudioBox" style="padding:10px 14px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
           <div>
-            <b style="font-size:14.5px">📊 全库 Studio 内容构成与占比分析</b>
-            <span class="hint" id="nbGlobalScanHint" style="margin-left:8px">同步或点击扫描后，自动按视频 / 音频 / 幻灯片 / 思维导图 / 测验等精确统计占比</span>
+            <b style="font-size:13.5px">📊 全库 Studio 占比</b>
+            <span class="hint" id="nbGlobalScanHint" style="margin-left:6px">统计视频 / 音频 / 幻灯片 / 思维导图等构成占比</span>
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="btn primary sm" id="btnNbSyncNow" onclick="syncAllNotebooks()">🔄 同步全部笔记本</button>
-            <button class="btn sm" id="btnScanMoreStudio" onclick="batchScanStudio(30)">📊 批量统计 Studio 占比 (+30本)</button>
+            <button class="btn sm" id="btnScanMoreStudio" onclick="batchScanStudio(30)">📊 批量统计占比 (+30本)</button>
           </div>
         </div>
         <div class="studio-stack" id="nbGlobalStack"></div>
-        <div class="studio-legend" id="nbGlobalLegend"><span class="hint">尚无已统计的 Studio 数据，点击右上角「批量统计 Studio 占比」即可开始采集。</span></div>
+        <div class="studio-legend" id="nbGlobalLegend" style="margin-top:6px"><span class="hint">尚无已统计的 Studio 数据，点击右上角「批量统计占比」即可采集。</span></div>
       </div>
 
       <div class="toolbar">
@@ -294,8 +340,18 @@ tbody tr:hover{background:#fbfaf6}
           <option value="sources">排序：来源文档数最多</option>
           <option value="title">排序：标题 A-Z</option>
         </select>
+        <select id="nbLimitSelect" onchange="onNbLimitChange()" title="每页显示数量">
+          <option value="24">每页 24 条</option>
+          <option value="36" selected>每页 36 条</option>
+          <option value="72">每页 72 条</option>
+        </select>
         <label class="check-inline"><input type="checkbox" id="nbOnlyStudio" onchange="onNbFilterChange()"> 仅看含 Studio 产物</label>
         <label class="check-inline"><input type="checkbox" id="nbOnlyOwner" onchange="onNbFilterChange()"> 仅看我创建的</label>
+        <span class="pill p-blue" id="nbKindFilterChip" style="display:none"></span>
+        <div class="view-switch" style="margin-left:auto">
+          <button type="button" id="btnNbViewGrid" class="active" onclick="setNbViewMode('grid')">🗂️ 卡片</button>
+          <button type="button" id="btnNbViewList" onclick="setNbViewMode('list')">📋 列表</button>
+        </div>
       </div>
 
       <div class="nb-grid" id="notebooksGrid"></div>
@@ -344,34 +400,33 @@ tbody tr:hover{background:#fbfaf6}
       </div>
 
       <div class="card-box">
-        <h3>
-          <span>⇄ 双向迁移控制台（同步完成可选自动导入 NotebookLM 主题）</span>
-        </h3>
-        <div class="form-grid">
-          <label>Google 云盘接收子目录（百度 ➔ Google）
-            <input type="text" id="brTargetGdriveSubdir" placeholder="百度网盘同步">
-          </label>
-          <label>百度网盘接收目录（Google ➔ 百度）
-            <input type="text" id="brTargetBaiduDir" placeholder="/NotebookLM_同步">
-          </label>
-          <label>可选：迁移到 Google 云盘后自动入库到 NotebookLM 主题
-            <select id="brAutoTopicSel">
-              <option value="">暂不自动导入（仅网盘同步）</option>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <b style="font-size:13.5px">⇄ 双向迁移：</b>
+            <button class="btn primary sm" id="btnBaiduToGdrive" onclick="startBaiduToGDrive()">➡️ 百度 ➔ Google (<span id="brBaiduSelCount">0</span>)</button>
+            <button class="btn sm" id="btnGdriveToBaidu" onclick="startGDriveToBaidu()">⬅️ Google ➔ 百度 (<span id="brGdriveSelCount">0</span>)</button>
+            <select id="brAutoTopicSel" style="padding:4px 8px;border:1px solid var(--line);border-radius:7px;font-size:12px">
+              <option value="">迁移后仅同步（不自动入主题）</option>
             </select>
-          </label>
-          <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;padding-bottom:4px">
-            <label class="check-inline"><input type="checkbox" id="brPreserveTree" checked> 保留原目录结构</label>
-            <label class="check-inline"><input type="checkbox" id="brSkipExisting" checked> 增量跳过已存在</label>
-            <label class="check-inline"><input type="checkbox" id="brDeleteAfter"> 迁移后删百度源文件</label>
-          </div>
-        </div>
-        <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn primary" id="btnBaiduToGdrive" onclick="startBaiduToGDrive()">➡️ 将百度勾选迁移至 Google 云盘 (<span id="brBaiduSelCount">0</span>)</button>
-            <button class="btn" id="btnGdriveToBaidu" onclick="startGDriveToBaidu()">⬅️ 将 Google 勾选上传至百度网盘 (<span id="brGdriveSelCount">0</span>)</button>
           </div>
           <button class="btn sm" onclick="clearBridgeSelections()">清空双边勾选</button>
         </div>
+        <details style="margin-top:8px">
+          <summary class="hint" style="cursor:pointer">⚙️ 展开目标路径与增量选项（目录设置 / 删源文件等）</summary>
+          <div class="form-grid" style="margin-top:8px">
+            <label>Google 云盘接收子目录（百度 ➔ Google）
+              <input type="text" id="brTargetGdriveSubdir" placeholder="百度网盘同步">
+            </label>
+            <label>百度网盘接收目录（Google ➔ 百度）
+              <input type="text" id="brTargetBaiduDir" placeholder="/NotebookLM_同步">
+            </label>
+            <div class="full" style="display:flex;gap:10px;flex-wrap:wrap;padding-top:2px">
+              <label class="check-inline"><input type="checkbox" id="brPreserveTree" checked> 保留原目录结构</label>
+              <label class="check-inline"><input type="checkbox" id="brSkipExisting" checked> 增量跳过已存在</label>
+              <label class="check-inline"><input type="checkbox" id="brDeleteAfter"> 迁移后删百度源文件</label>
+            </div>
+          </div>
+        </details>
       </div>
 
       <div class="bridge-grid">
@@ -534,40 +589,43 @@ tbody tr:hover{background:#fbfaf6}
         <div id="qaResultBox" style="margin-top:10px"></div>
       </div>
 
-      <div class="two-col">
-        <div class="card-box">
-          <h3><span>🛠️ Section C · 官方 Remote MCP 交互式工具直调</span></h3>
-          <div class="form-grid">
-            <label>选择官方工具
-              <select id="mcpToolSelect" onchange="fillMcpToolTemplate()">
-                <option value="list_notebooks">list_notebooks</option>
-                <option value="create_notebook">create_notebook</option>
-                <option value="get_notebook">get_notebook</option>
-                <option value="update_notebook">update_notebook</option>
-                <option value="create_source">create_source</option>
-                <option value="get_source">get_source</option>
-                <option value="list_sources">list_sources</option>
-              </select>
-            </label>
-            <div style="display:flex;align-items:flex-end">
-              <button class="btn primary" onclick="runOfficialMcpToolCall()">▶ 执行 MCP tools/call</button>
+      <details class="card-box">
+        <summary style="cursor:pointer;font-size:13.5px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:8px;list-style:none">
+          <span>🛠️ Section C &amp; D · 官方 Remote MCP 直调与本机 Antigravity MCP 状态（点击展开）</span>
+          <span class="pill p-gray" id="localMcpBadge">检查中…</span>
+        </summary>
+        <div class="two-col" style="margin-top:10px">
+          <div class="card-box" style="margin-bottom:0">
+            <h3><span>🛠️ 官方 Remote MCP 交互式工具直调</span></h3>
+            <div class="form-grid">
+              <label>选择官方工具
+                <select id="mcpToolSelect" onchange="fillMcpToolTemplate()">
+                  <option value="list_notebooks">list_notebooks</option>
+                  <option value="create_notebook">create_notebook</option>
+                  <option value="get_notebook">get_notebook</option>
+                  <option value="update_notebook">update_notebook</option>
+                  <option value="create_source">create_source</option>
+                  <option value="get_source">get_source</option>
+                  <option value="list_sources">list_sources</option>
+                </select>
+              </label>
+              <div style="display:flex;align-items:flex-end">
+                <button class="btn primary" onclick="runOfficialMcpToolCall()">▶ 执行 MCP tools/call</button>
+              </div>
+              <label class="full">Arguments JSON
+                <textarea id="mcpToolArgs" rows="5" class="mono">{}</textarea>
+              </label>
             </div>
-            <label class="full">Arguments JSON
-              <textarea id="mcpToolArgs" rows="5" class="mono">{}</textarea>
-            </label>
+            <pre class="code-pre" id="mcpCallResult" style="display:none"></pre>
           </div>
-          <pre class="code-pre" id="mcpCallResult" style="display:none"></pre>
-        </div>
 
-        <div class="card-box">
-          <h3>
-            <span>🤖 Section D · 本机 Antigravity Fleet MCP 状态</span>
-            <span class="pill p-gray" id="localMcpBadge">检查中…</span>
-          </h3>
-          <div class="hint mono" id="localMcpPath" style="margin-bottom:8px"></div>
-          <div class="chips" id="localMcpTools"></div>
+          <div class="card-box" style="margin-bottom:0">
+            <h3><span>🤖 本机 Antigravity Fleet MCP 配置</span></h3>
+            <div class="hint mono" id="localMcpPath" style="margin-bottom:8px"></div>
+            <div class="chips" id="localMcpTools"></div>
+          </div>
         </div>
-      </div>
+      </details>
     </section>
 
     <!-- 3. Topics & Batch -->
@@ -606,7 +664,14 @@ tbody tr:hover{background:#fbfaf6}
     <!-- 4. Task Queue -->
     <section class="panel" id="panelTasks">
       <div class="toolbar">
-        <select id="taskStatusFilter" onchange="loadTasks()">
+        <div class="filter-pills" id="taskQuickPills">
+          <button type="button" class="fpill active" data-st="all" onclick="setTaskQuickStatus('all')">全部</button>
+          <button type="button" class="fpill" data-st="running" onclick="setTaskQuickStatus('running')">执行中</button>
+          <button type="button" class="fpill" data-st="pending" onclick="setTaskQuickStatus('pending')">待调度</button>
+          <button type="button" class="fpill" data-st="failed" onclick="setTaskQuickStatus('failed')">失败</button>
+          <button type="button" class="fpill" data-st="done" onclick="setTaskQuickStatus('done')">已完成</button>
+        </div>
+        <select id="taskStatusFilter" onchange="onTaskStatusSelectChange()">
           <option value="all">全部状态</option>
           <option value="pending">待调度 (pending)</option>
           <option value="waiting_quota">等待额度刷新 (waiting_quota)</option>
@@ -616,9 +681,9 @@ tbody tr:hover{background:#fbfaf6}
           <option value="failed">失败 (failed)</option>
           <option value="canceled">已取消 (canceled)</option>
         </select>
-        <button class="btn primary" onclick="triggerTick()">立即调度一轮</button>
-        <button class="btn" onclick="loadTasks()">刷新队列</button>
-        <span class="hint">同一账号严格串行并带 8–18 秒随机防风控间隔。</span>
+        <button class="btn primary sm" onclick="triggerTick()">立即调度一轮</button>
+        <button class="btn sm" onclick="loadTasks()">刷新队列</button>
+        <span class="hint" id="taskQueueLiveHint">同一账号严格串行并带 8–18 秒防风控间隔</span>
       </div>
       <div class="tablebox">
         <table>
@@ -724,7 +789,18 @@ tbody tr:hover{background:#fbfaf6}
           <label>轮询额度间隔 (分钟)<input type="number" id="stPollMin" min="2" max="120"></label>
           <label>同号任务最小延迟 (秒)<input type="number" id="stDelayMin" min="2" max="120"></label>
           <label>同号任务最大延迟 (秒)<input type="number" id="stDelayMax" min="2" max="300"></label>
-          <label>默认生成语言<input type="text" id="stLang"></label>
+          <label>默认生成语言
+            <select id="stLang">
+              <option value="zh_Hans">中文（简体 · zh_Hans）</option>
+              <option value="zh_Hant">中文（繁體 · zh_Hant）</option>
+              <option value="en">English (en)</option>
+              <option value="ja">日本語 (ja)</option>
+              <option value="ko">한국어 (ko)</option>
+              <option value="es">Español (es)</option>
+              <option value="fr">Français (fr)</option>
+              <option value="de">Deutsch (de)</option>
+            </select>
+          </label>
           <label>整个工作目录路径 (左侧边栏默认根)
             <div class="path-row">
               <input type="text" id="stWorkspaceRoot">
@@ -772,7 +848,7 @@ let STATE = {
   officialStatus: null, officialTools: [], sys: null,
   libSubpath: "", selectedTopics: new Set(), selectedDriveFiles: new Set(),
   ws: { root: "workspace", subpath: "", q: "", entries: [], currentPath: "" },
-  nb: { items: [], total: 0, limit: 36, offset: 0, summary: null },
+  nb: { items: [], total: 0, limit: 36, offset: 0, summary: null, studioKind: "", viewMode: "grid" },
   bridge: {
     status: null, baiduPath: "/", baiduItems: [], selectedBaidu: new Set(),
     gdriveRoot: "drive_library", gdriveSubpath: "", gdriveItems: [], selectedGdrive: new Set(),
@@ -796,6 +872,93 @@ function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&
 function safeHttpUrl(u){
   const s = String(u || "").trim();
   return (s.startsWith("https://") || s.startsWith("http://")) ? s : "";
+}
+function fileTypeIcon(entry){
+  if(entry.is_dir) return "📁";
+  const ext = String(entry.extension || "").toLowerCase();
+  if(ext === ".md") return "📘";
+  if(ext === ".pdf") return "📕";
+  if([".png",".jpg",".jpeg",".gif",".webp",".bmp"].includes(ext)) return "🖼️";
+  if([".mp3",".m4a",".wav",".ogg",".aac"].includes(ext)) return "🎙️";
+  if([".mp4",".webm",".mov"].includes(ext)) return "🎬";
+  if([".py",".js",".ts",".tsx",".jsx",".json",".yaml",".yml",".sql",".ps1",".sh",".css"].includes(ext)) return "💻";
+  return "📄";
+}
+function renderMarkdownSafe(md){
+  const text = String(md || "").replace(/\r\n/g, "\n");
+  const codeBlocks = [];
+  const withPlaceholders = text.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (_, lang, code) => {
+    const idx = codeBlocks.length;
+    codeBlocks.push(`<pre><code class="lang-${esc(lang)}">${esc(code)}</code></pre>`);
+    return `\n@@CODEBLOCK_${idx}@@\n`;
+  });
+  function inlineFmt(raw){
+    const codes = [];
+    let s = String(raw || "").replace(/`([^`\n]+)`/g, (_, c) => {
+      const idx = codes.length;
+      codes.push(`<code>${esc(c)}</code>`);
+      return `@@ICODE_${idx}@@`;
+    });
+    s = esc(s);
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_, label, url) => {
+      const safe = safeHttpUrl(url.replace(/&amp;/g, "&"));
+      return safe ? `<a href="${esc(safe)}" target="_blank" rel="noopener">${label}</a>` : label;
+    });
+    s = s.replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>");
+    s = s.replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
+    s = s.replace(/@@ICODE_(\d+)@@/g, (_, i) => codes[Number(i)] || "");
+    return s;
+  }
+  const lines = withPlaceholders.split("\n");
+  const out = [];
+  let inUl = false, inOl = false, inTable = false;
+  const closeLists = () => {
+    if(inUl){ out.push("</ul>"); inUl = false; }
+    if(inOl){ out.push("</ol>"); inOl = false; }
+    if(inTable){ out.push("</tbody></table>"); inTable = false; }
+  };
+  for(const line of lines){
+    const trim = line.trim();
+    const cbMatch = trim.match(/^@@CODEBLOCK_(\d+)@@$/);
+    if(cbMatch){ closeLists(); out.push(codeBlocks[Number(cbMatch[1])] || ""); continue; }
+    if(!trim){ closeLists(); continue; }
+    if(/^---+$/.test(trim)){ closeLists(); out.push("<hr style='border:none;border-top:1px solid var(--line);margin:12px 0'>"); continue; }
+    const hMatch = trim.match(/^(#{1,4})\s+(.+)$/);
+    if(hMatch){ closeLists(); out.push(`<h${hMatch[1].length}>${inlineFmt(hMatch[2])}</h${hMatch[1].length}>`); continue; }
+    if(trim.startsWith(">")){ closeLists(); out.push(`<blockquote>${inlineFmt(trim.replace(/^>\s?/, ""))}</blockquote>`); continue; }
+    if(trim.startsWith("|") && trim.endsWith("|")){
+      const cells = trim.slice(1, -1).split("|").map(c => c.trim());
+      if(cells.every(c => /^:?-{2,}:?$/.test(c))) continue;
+      if(!inTable){
+        closeLists();
+        inTable = true;
+        out.push(`<table><thead><tr>${cells.map(c => `<th>${inlineFmt(c)}</th>`).join("")}</tr></thead><tbody>`);
+      }else{
+        out.push(`<tr>${cells.map(c => `<td>${inlineFmt(c)}</td>`).join("")}</tr>`);
+      }
+      continue;
+    }
+    const ulMatch = trim.match(/^[-*+]\s+(.+)$/);
+    if(ulMatch){
+      if(inOl){ out.push("</ol>"); inOl = false; }
+      if(inTable){ out.push("</tbody></table>"); inTable = false; }
+      if(!inUl){ out.push("<ul>"); inUl = true; }
+      out.push(`<li>${inlineFmt(ulMatch[1])}</li>`);
+      continue;
+    }
+    const olMatch = trim.match(/^\d+\.\s+(.+)$/);
+    if(olMatch){
+      if(inUl){ out.push("</ul>"); inUl = false; }
+      if(inTable){ out.push("</tbody></table>"); inTable = false; }
+      if(!inOl){ out.push("<ol>"); inOl = true; }
+      out.push(`<li>${inlineFmt(olMatch[1])}</li>`);
+      continue;
+    }
+    closeLists();
+    out.push(`<p>${inlineFmt(trim)}</p>`);
+  }
+  closeLists();
+  return out.join("\n");
 }
 function toast(msg, isErr=false){
   const el = $("#toast");
@@ -868,6 +1031,29 @@ function barColor(rem){
 
 function toggleSidebar(){
   $("#wsSidebar").classList.toggle("collapsed");
+}
+function toggleSidebarWidth(){
+  const sb = $("#wsSidebar");
+  if(sb.classList.contains("collapsed")) sb.classList.remove("collapsed");
+  sb.classList.toggle("wide");
+}
+function selectAllWsFiles(){
+  const files = (STATE.ws.entries || []).filter(e => !e.is_dir);
+  if(!files.length) return toast("当前目录暂无可选文件", true);
+  let added = 0;
+  for(const f of files){
+    if(!STATE.stagedFiles.has(f.path)){
+      STATE.stagedFiles.set(f.path, { path: f.path, name: f.name, relative_path: f.relative_path, root: STATE.ws.root });
+      added++;
+    }
+  }
+  renderBasket();
+  loadWorkspaceTree();
+  toast(added ? `已将当前目录 ${added} 个文件加入选材篮` : "当前目录可见文件均已在选材篮中");
+}
+function revealCurrentWsDir(){
+  if(STATE.ws.currentPath) revealPath(STATE.ws.currentPath);
+  else toast("目录路径尚未加载", true);
 }
 
 function switchTab(panelId){
@@ -943,11 +1129,12 @@ async function loadWorkspaceTree(){
         </div>`;
       }
       const checked = STATE.stagedFiles.has(e.path) ? "checked" : "";
+      const icon = fileTypeIcon(e);
       return `<div class="ws-row">
         <input type="checkbox" ${checked} onchange="toggleStageFile(decodeURIComponent('${encPath}'), decodeURIComponent('${encName}'), decodeURIComponent('${encRel}'), this.checked)">
-        <span class="ws-name" title="${esc(e.relative_path)}" onclick="previewWsFile(decodeURIComponent('${encRel}'))">📄 ${esc(e.name)}</span>
+        <span class="ws-name" title="${esc(e.relative_path)}" onclick="previewWsFile(decodeURIComponent('${encRel}'))">${icon} ${esc(e.name)}</span>
         <span class="ws-meta">${fmtBytes(e.size_bytes)}</span>
-        <button class="ws-eye" title="预览内容" onclick="previewWsFile(decodeURIComponent('${encRel}'))">预览</button>
+        <button class="ws-eye" title="阅读/预览内容" onclick="previewWsFile(decodeURIComponent('${encRel}'))">预览</button>
       </div>`;
     }).join("");
   }catch(err){
@@ -989,19 +1176,66 @@ function renderBasket(){
   if(qaChips) qaChips.innerHTML = items.length ? chipHtml : '<span class="hint">可在左侧工作目录勾选任意文件</span>';
 }
 
+window._previewMdMode = "rendered";
+function renderFileModalBody(d){
+  const kind = d.preview_kind || (d.is_binary ? "binary" : "text");
+  const rawUrl = d.raw_url || "";
+  if(kind === "image" && rawUrl){
+    return `<div class="media-box"><img src="${esc(rawUrl)}" alt="${esc(d.name)}"></div>`;
+  }
+  if(kind === "pdf" && rawUrl){
+    return `<iframe src="${esc(rawUrl)}" style="width:100%;height:68vh;border:1px solid var(--line);border-radius:8px;background:#fff"></iframe>`;
+  }
+  if(kind === "audio" && rawUrl){
+    return `<div style="padding:26px 16px;background:#faf8f3;border:1px solid var(--line);border-radius:10px;text-align:center">
+      <div style="font-weight:700;margin-bottom:12px">🎙️ ${esc(d.name)}</div>
+      <audio controls style="width:100%" src="${esc(rawUrl)}"></audio>
+    </div>`;
+  }
+  if(kind === "video" && rawUrl){
+    return `<div class="media-box"><video controls style="max-width:100%;max-height:66vh" src="${esc(rawUrl)}"></video></div>`;
+  }
+  if(kind === "markdown"){
+    if(window._previewMdMode === "raw"){
+      return `<pre class="code-pre" style="max-height:66vh">${esc(d.content)}</pre>`;
+    }
+    return `<div class="md-view">${renderMarkdownSafe(d.content)}</div>`;
+  }
+  return `<pre class="code-pre" style="max-height:66vh">${esc(d.content)}</pre>`;
+}
+function toggleMdPreviewMode(){
+  window._previewMdMode = (window._previewMdMode === "rendered") ? "raw" : "rendered";
+  const d = window._lastPreviewDoc;
+  if(!d) return;
+  const wrap = $("#wsPreviewBodyWrap");
+  if(wrap) wrap.innerHTML = renderFileModalBody(d);
+  const btn = $("#btnToggleMdMode");
+  if(btn) btn.textContent = (window._previewMdMode === "rendered") ? "📝 切换原始文本" : "📖 切换排版阅读";
+}
 async function previewWsFile(relPath){
   try{
     const d = await api(`/api/workspace/preview?root=${encodeURIComponent(STATE.ws.root)}&subpath=${encodeURIComponent(relPath)}`);
+    window._lastPreviewDoc = d;
+    window._previewMdMode = "rendered";
     const encPath = encodeURIComponent(d.full_path);
     const encName = encodeURIComponent(d.name);
     const encRel = encodeURIComponent(relPath);
-    showModal(`<h3>📄 文件预览 · ${esc(d.name)}</h3>
-      <div class="hint mono" style="margin-bottom:8px">${esc(d.full_path)} · ${fmtBytes(d.size_bytes)} · ${esc(d.mime_type)} ${d.truncated ? "(仅显示前 32KB)" : ""}</div>
-      <pre class="code-pre" style="max-height:420px">${esc(d.content)}</pre>
+    const isMd = d.preview_kind === "markdown";
+    const hasTextCopy = !d.is_binary && typeof d.content === "string";
+    showModal(`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+        <h3 style="margin:0">📄 内容阅读器 · ${esc(d.name)}</h3>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${isMd ? `<button class="btn sm" id="btnToggleMdMode" onclick="toggleMdPreviewMode()">📝 切换原始文本</button>` : ""}
+          ${hasTextCopy ? `<button class="btn sm" onclick="copyTextValue(window._lastPreviewDoc ? window._lastPreviewDoc.content : '')">📋 复制全文</button>` : ""}
+          <button class="btn sm" onclick="revealPath(decodeURIComponent('${encPath}'))">📁 打开位置</button>
+        </div>
+      </div>
+      <div class="hint mono" style="margin-bottom:8px;word-break:break-all">${esc(d.full_path)} · ${fmtBytes(d.size_bytes)} · ${esc(d.mime_type)} ${d.truncated ? "(文本预览截取前 64KB)" : ""}</div>
+      <div id="wsPreviewBodyWrap">${renderFileModalBody(d)}</div>
       <div class="modal-actions">
-        <button class="btn" onclick="closeModal()">关闭</button>
+        <button class="btn" onclick="closeModal()">关闭 (Esc)</button>
         <button class="btn primary" onclick="toggleStageFile(decodeURIComponent('${encPath}'), decodeURIComponent('${encName}'), decodeURIComponent('${encRel}'), true); loadWorkspaceTree(); closeModal(); toast('已加入选材篮')">＋ 加入选材篮</button>
-      </div>`);
+      </div>`, true);
   }catch(e){ toast(e.message, true); }
 }
 
@@ -1160,6 +1394,7 @@ function renderDashboard(){
         <button class="btn sm" onclick="launchCh2CmdLogin(${a.id}, 'chrome')">🖥️ CMD登录</button>
         <button class="btn sm" onclick="refreshSession(${a.id}, this)">♻️ 无感续期</button>
         <button class="btn sm" onclick="pollOne(${a.id})">测额</button>
+        <button class="btn sm" onclick="filterNotebooksByAccount(${a.id})">📚 查看笔记本</button>
         <button class="btn sm" onclick="openChrome(${a.id})">弹出专属Chrome</button>
         <button class="btn sm" onclick="oauthOfficial(${a.id})">官方API授权</button>
       </div>
@@ -1464,16 +1699,37 @@ function updateBatchBar(){ const n = STATE.selectedTopics.size; $("#batchCountTe
 
 function renderTasks(){
   const tb = $("#tasksBody");
+  const hasActive = (STATE.tasks || []).some(t => t.status === "pending" || t.status === "running");
+  const liveHint = $("#taskQueueLiveHint");
+  if(liveHint){
+    liveHint.textContent = hasActive ? "⏳ 有任务正在执行，每 5 秒自动刷新进度…" : "同一账号严格串行并带 8–18 秒防风控间隔";
+  }
+  if(hasActive && !window._mainTaskPollTimer){
+    window._mainTaskPollTimer = setInterval(() => {
+      if($("#panelTasks") && $("#panelTasks").classList.contains("show")) loadTasks();
+    }, 5000);
+  }else if(!hasActive && window._mainTaskPollTimer){
+    clearInterval(window._mainTaskPollTimer);
+    window._mainTaskPollTimer = null;
+  }
+
   if(!STATE.tasks.length){
     tb.innerHTML = '<tr><td colspan="8" class="empty">暂无任务 — 可在「主题与批量协作」或 Antigravity 对话中批量下发</td></tr>';
     return;
   }
   tb.innerHTML = STATE.tasks.map(t => {
     const costTxt = `${t.est_cost_pct != null ? Number(t.est_cost_pct).toFixed(1)+"%" : "—"} / ${t.actual_delta_5h_pct != null ? Number(t.actual_delta_5h_pct).toFixed(2)+"%" : "—"}`;
-    const outTxt = t.error_msg ? `<span style="color:var(--red)">${esc(t.error_msg)}</span>` : esc(t.result_artifact_path || t.result_text || (t.scheduled_after ? "预计唤醒: " + fmtReset(t.scheduled_after) : "—"));
+    const outTxt = t.error_msg
+      ? `<span style="color:var(--red)">${esc(t.error_msg)}</span>`
+      : esc(t.result_artifact_path || t.result_text || (t.remote_task_id ? `云端任务 ${t.remote_task_id}` : (t.scheduled_after ? "预计唤醒: " + fmtReset(t.scheduled_after) : "—")));
+    const targetCell = t.topic_name
+      ? `<b>${esc(t.topic_name)}</b>`
+      : (t.notebook_id
+          ? `<a class="link" href="/notebooks/${t.notebook_id}" style="padding:0;font-weight:700;text-decoration:none">📖 ${esc(t.notebook_title || ("笔记本 #" + t.notebook_id))}</a>`
+          : '<b>未关联</b>');
     return `<tr>
       <td class="mono">#${t.id}</td>
-      <td><b>${esc(t.topic_name || "未关联")}</b><div class="sub mono">${esc(t.batch_id || "")}</div></td>
+      <td>${targetCell}<div class="sub mono">${esc(t.batch_id || "")}</div></td>
       <td class="mono">${esc(t.task_type)}</td>
       <td>${esc(t.assigned_alias || (t.preferred_alias ? "偏好:"+t.preferred_alias : "自动调度"))}<div class="sub mono">${esc(t.channel_used || "")}</div></td>
       <td class="num mono">${costTxt}</td>
@@ -1487,6 +1743,17 @@ function renderTasks(){
   }).join("");
 }
 
+function setTaskQuickStatus(st){
+  const sel = $("#taskStatusFilter");
+  if(sel) sel.value = st;
+  document.querySelectorAll("#taskQuickPills .fpill").forEach(b => b.classList.toggle("active", b.dataset.st === st));
+  loadTasks();
+}
+function onTaskStatusSelectChange(){
+  const st = $("#taskStatusFilter") ? $("#taskStatusFilter").value : "all";
+  document.querySelectorAll("#taskQuickPills .fpill").forEach(b => b.classList.toggle("active", b.dataset.st === st));
+  loadTasks();
+}
 async function loadTasks(){
   const st = $("#taskStatusFilter").value;
   const data = await api(`/api/tasks?status=${encodeURIComponent(st)}&limit=150`);
@@ -1557,7 +1824,7 @@ function renderLedgerAndSettings(){
   $("#stPollMin").value = s.poll_interval_min || "12";
   $("#stDelayMin").value = s.task_delay_min_sec || "8";
   $("#stDelayMax").value = s.task_delay_max_sec || "18";
-  $("#stLang").value = s.default_language || "zh-Hans";
+  $("#stLang").value = (s.default_language || "zh_Hans").replace("zh-Hans", "zh_Hans");
   $("#stWorkspaceRoot").value = s.workspace_root || "";
   if($("#stLibraryRoot")) $("#stLibraryRoot").value = s.drive_library_root || "";
   $("#stHubRoot").value = s.drive_hub_root || "";
@@ -1928,6 +2195,30 @@ function renderStudioBarHtml(byKind, small=false){
   if(!byKind || !byKind.length) return "";
   return `<div class="studio-stack ${small ? "sm" : ""}">${byKind.map(x => `<div class="studio-seg" title="${esc(x.label)}: ${x.count} 项 (${x.pct}%)" style="width:${Math.max(1.5, x.pct)}%;background:${esc(x.color)}"></div>`).join("")}</div>`;
 }
+function filterNotebooksByAccount(acctId){
+  const sel = $("#nbAcctFilter");
+  if(sel) sel.value = String(acctId);
+  STATE.nb.offset = 0;
+  switchTab("panelNotebooks");
+}
+function onNbLimitChange(){
+  const sel = $("#nbLimitSelect");
+  STATE.nb.limit = Number((sel && sel.value) || 36);
+  STATE.nb.offset = 0;
+  loadNotebooks();
+}
+function setNbViewMode(mode){
+  STATE.nb.viewMode = (mode === "list") ? "list" : "grid";
+  const g = $("#btnNbViewGrid"), l = $("#btnNbViewList");
+  if(g) g.classList.toggle("active", STATE.nb.viewMode === "grid");
+  if(l) l.classList.toggle("active", STATE.nb.viewMode === "list");
+  renderNotebooks();
+}
+function toggleStudioKindFilter(kind){
+  STATE.nb.studioKind = (STATE.nb.studioKind === kind) ? "" : kind;
+  STATE.nb.offset = 0;
+  loadNotebooks();
+}
 async function loadNotebooks(){
   const grid = $("#notebooksGrid");
   if(!grid) return;
@@ -1941,6 +2232,7 @@ async function loadNotebooks(){
     only_with_studio: String(onlyStudio), only_owner: String(onlyOwner)
   });
   if(accountId) qs.set("account_id", accountId);
+  if(STATE.nb.studioKind) qs.set("studio_kind", STATE.nb.studioKind);
   try{
     const d = await api("/api/notebooks?" + qs.toString());
     STATE.nb.items = d.notebooks || [];
@@ -1954,68 +2246,115 @@ async function loadNotebooks(){
 function renderNotebooks(){
   const gs = STATE.nb.summary || {};
   const byKind = gs.by_kind || [];
+  const activeKind = STATE.nb.studioKind || "";
   $("#nbGlobalScanHint").textContent = gs.total_notebooks
-    ? `已统计 ${gs.scanned_notebooks || 0} / ${gs.total_notebooks} 个笔记本 · 累计发现 ${gs.total_artifacts || 0} 项 Studio 产物`
+    ? `已统计 ${gs.scanned_notebooks || 0} / ${gs.total_notebooks} 个笔记本 · 累计发现 ${gs.total_artifacts || 0} 项 Studio 产物（点击下方案例可筛选）`
     : "尚未同步笔记本";
   $("#nbGlobalStack").innerHTML = byKind.length
-    ? byKind.map(x => `<div class="studio-seg" title="${esc(x.label)}: ${x.count} (${x.pct}%)" style="width:${Math.max(1.2, x.pct)}%;background:${esc(x.color)}"></div>`).join("")
+    ? byKind.map(x => `<div class="studio-seg clickable" onclick="toggleStudioKindFilter(decodeURIComponent('${encodeURIComponent(x.kind)}'))" title="点击筛选：${esc(x.label)} (${x.count} · ${x.pct}%)" style="width:${Math.max(1.2, x.pct)}%;background:${esc(x.color)}"></div>`).join("")
     : "";
   $("#nbGlobalLegend").innerHTML = byKind.length
-    ? byKind.map(x => `<span class="st-leg-item"><span class="st-dot" style="background:${esc(x.color)}"></span>${esc(x.icon)} <b>${esc(x.label)}</b> ${x.pct}% (${x.count})</span>`).join("")
+    ? byKind.map(x => `<span class="st-leg-item clickable ${activeKind === x.kind ? "active" : ""}" onclick="toggleStudioKindFilter(decodeURIComponent('${encodeURIComponent(x.kind)}'))" title="点击筛选含 ${esc(x.label)} 的笔记本"><span class="st-dot" style="background:${esc(x.color)}"></span>${esc(x.icon)} <b>${esc(x.label)}</b> ${x.pct}% (${x.count})</span>`).join("")
     : '<span class="hint">尚无已统计的 Studio 数据，点击右上角「批量统计 Studio 占比」即可采集。</span>';
+
+  const chip = $("#nbKindFilterChip");
+  if(chip){
+    if(activeKind){
+      const matchKind = byKind.find(x => x.kind === activeKind);
+      chip.style.display = "inline-block";
+      chip.innerHTML = `类型筛选: ${esc(matchKind ? matchKind.label : activeKind)} <button class="link danger" style="padding:0 2px" onclick="toggleStudioKindFilter('')">✕</button>`;
+    }else{
+      chip.style.display = "none";
+    }
+  }
 
   const grid = $("#notebooksGrid");
   if(!STATE.nb.items.length){
-    grid.innerHTML = `<div class="card-box empty" style="grid-column:1/-1">暂无匹配的笔记本。可先点击右上角或上方「🔄 同步全部笔记本」拉取全库笔记本与来源数量。</div>`;
+    grid.className = "nb-grid";
+    grid.innerHTML = `<div class="card-box empty" style="grid-column:1/-1">暂无匹配的笔记本${activeKind ? '（当前已启用 Studio 类型筛选，点击红色 ✕ 可恢复全部）' : '。可先点击右上角或上方「🔄 同步全部笔记本」拉取全库笔记本与来源数量。'}</div>`;
     $("#nbPager").style.display = "none";
     return;
   }
 
-  grid.innerHTML = STATE.nb.items.map(nb => {
-    const st = nb.studio_stats || {};
-    const kinds = st.by_kind || [];
-    const scanned = Boolean(nb.studio_scanned);
-    const totalStudio = Number(st.total || nb.artifact_count || 0);
-    let studioBlock = "";
-    if(!scanned){
-      studioBlock = `<div class="hint" style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 8px;background:#faf8f3;border-radius:8px;border:1px dashed var(--line)">
-        <span>尚未统计 Studio 占比</span>
-        <button class="btn sm" onclick="refreshSingleNbStats(${nb.id}, this)">🔍 立即统计占比</button>
-      </div>`;
-    }else if(totalStudio === 0){
-      studioBlock = `<div class="hint" style="padding:5px 8px;background:#faf8f3;border-radius:8px">已扫描 Studio：暂无产物（进入子页可一键生成）</div>`;
-    }else{
-      studioBlock = `<div>
-        ${renderStudioBarHtml(kinds, true)}
-        <div class="chips" style="margin-top:6px">
-          ${kinds.map(k => `<span class="chip" title="${esc(k.label)}"><span class="st-dot" style="background:${esc(k.color)};width:7px;height:7px;vertical-align:middle;margin-right:3px"></span>${esc(k.icon)} ${esc(k.label)} <b>${k.pct}%</b> (${k.count})</span>`).join("")}
+  if(STATE.nb.viewMode === "list"){
+    grid.className = "";
+    const rowsHtml = STATE.nb.items.map(nb => {
+      const st = nb.studio_stats || {};
+      const kinds = st.by_kind || [];
+      const scanned = Boolean(nb.studio_scanned);
+      const totalStudio = Number(st.total || nb.artifact_count || 0);
+      const encTitle = encodeURIComponent(nb.title || "");
+      const rolePill = nb.is_master ? '<span class="pill p-green">自有</span>' : `<span class="pill p-blue">${esc(nb.role || "共享")}</span>`;
+      const studioMini = scanned
+        ? (totalStudio ? `<div style="min-width:170px">${renderStudioBarHtml(kinds, true)}<div class="sub">${kinds.slice(0,3).map(k => `${esc(k.icon)}${k.pct}%`).join(" · ")}</div></div>` : '<span class="hint">无产物</span>')
+        : `<button class="btn sm" onclick="refreshSingleNbStats(${nb.id}, this)">🔍 扫描</button>`;
+      return `<tr>
+        <td>
+          <a class="nb-title-link" style="font-size:13.5px" href="/notebooks/${nb.id}" onclick="return openNotebookSubpage(${nb.id}, decodeURIComponent('${encTitle}'))">${esc(nb.title)}</a>
+          <div class="sub mono">${esc((nb.remote_notebook_id || "").slice(0, 14))}…</div>
+        </td>
+        <td><span class="pill p-gray">${esc(nb.account_alias)}</span> ${rolePill}</td>
+        <td class="num mono">${nb.source_count || 0}</td>
+        <td class="num mono"><b>${totalStudio}</b></td>
+        <td>${studioMini}</td>
+        <td class="ops">
+          <a class="btn primary sm" href="/notebooks/${nb.id}" onclick="return openNotebookSubpage(${nb.id}, decodeURIComponent('${encTitle}'))" style="text-decoration:none">📖 打开</a>
+          <a class="btn sm" href="/notebooks/${nb.id}" target="_blank" rel="noopener" style="text-decoration:none" title="在浏览器新标签页打开">↗ 标签</a>
+          ${nb.web_url && safeHttpUrl(nb.web_url) ? `<a class="btn sm" href="${esc(safeHttpUrl(nb.web_url))}" target="_blank" rel="noopener" style="text-decoration:none">原页</a>` : ""}
+        </td>
+      </tr>`;
+    }).join("");
+    grid.innerHTML = `<div class="tablebox"><table><thead><tr><th>笔记本名称</th><th>账号 / 角色</th><th class="num">来源</th><th class="num">Studio</th><th>占比分布</th><th>操作</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>`;
+  }else{
+    grid.className = "nb-grid";
+    grid.innerHTML = STATE.nb.items.map(nb => {
+      const st = nb.studio_stats || {};
+      const kinds = st.by_kind || [];
+      const scanned = Boolean(nb.studio_scanned);
+      const totalStudio = Number(st.total || nb.artifact_count || 0);
+      let studioBlock = "";
+      if(!scanned){
+        studioBlock = `<div class="hint" style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 8px;background:#faf8f3;border-radius:8px;border:1px dashed var(--line)">
+          <span>尚未统计 Studio 占比</span>
+          <button class="btn sm" onclick="refreshSingleNbStats(${nb.id}, this)">🔍 立即统计占比</button>
+        </div>`;
+      }else if(totalStudio === 0){
+        studioBlock = `<div class="hint" style="padding:5px 8px;background:#faf8f3;border-radius:8px">已扫描 Studio：暂无产物（进入子页可一键生成）</div>`;
+      }else{
+        studioBlock = `<div>
+          ${renderStudioBarHtml(kinds, true)}
+          <div class="chips" style="margin-top:6px">
+            ${kinds.map(k => `<span class="chip" title="点击按 ${esc(k.label)} 筛选" style="cursor:pointer" onclick="toggleStudioKindFilter(decodeURIComponent('${encodeURIComponent(k.kind)}'))"><span class="st-dot" style="background:${esc(k.color)};width:7px;height:7px;vertical-align:middle;margin-right:3px"></span>${esc(k.icon)} ${esc(k.label)} <b>${k.pct}%</b> (${k.count})</span>`).join("")}
+          </div>
+        </div>`;
+      }
+      const rolePill = nb.is_master
+        ? '<span class="pill p-green">自有</span>'
+        : `<span class="pill p-blue">${esc(nb.role || "共享")}</span>`;
+      const encTitle = encodeURIComponent(nb.title || "");
+      return `<div class="nb-card">
+        <div class="nb-meta-row">
+          <span style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
+            <span class="pill p-gray">${esc(nb.account_alias)}</span>
+            ${rolePill}
+            ${nb.topic_name ? `<span class="pill p-amber">${esc(nb.topic_name)}</span>` : ""}
+          </span>
+          <span class="sub mono">${nb.source_count || 0} 源 · ${totalStudio} Studio</span>
+        </div>
+        <a class="nb-title-link" href="/notebooks/${nb.id}" onclick="return openNotebookSubpage(${nb.id}, decodeURIComponent('${encTitle}'))">${esc(nb.title)}</a>
+        ${studioBlock}
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding-top:6px;border-top:1px dashed var(--line);margin-top:auto">
+          <span class="sub mono">${esc((nb.remote_notebook_id || "").slice(0, 12))}…</span>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <a class="btn primary sm" href="/notebooks/${nb.id}" onclick="return openNotebookSubpage(${nb.id}, decodeURIComponent('${encTitle}'))" style="text-decoration:none">📖 进入子网页</a>
+            <a class="btn sm" href="/notebooks/${nb.id}" target="_blank" rel="noopener" style="text-decoration:none" title="在新标签页打开">↗ 新标签</a>
+            ${scanned ? `<button class="btn sm" onclick="refreshSingleNbStats(${nb.id}, this)">↻</button>` : ""}
+            ${nb.web_url && safeHttpUrl(nb.web_url) ? `<a class="btn sm" href="${esc(safeHttpUrl(nb.web_url))}" target="_blank" rel="noopener" style="text-decoration:none">↗ 原页</a>` : ""}
+          </div>
         </div>
       </div>`;
-    }
-    const rolePill = nb.is_master
-      ? '<span class="pill p-green">自有</span>'
-      : `<span class="pill p-blue">${esc(nb.role || "共享")}</span>`;
-    return `<div class="nb-card">
-      <div class="nb-meta-row">
-        <span style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
-          <span class="pill p-gray">${esc(nb.account_alias)}</span>
-          ${rolePill}
-          ${nb.topic_name ? `<span class="pill p-amber">${esc(nb.topic_name)}</span>` : ""}
-        </span>
-        <span class="sub mono">${nb.source_count || 0} 源 · ${totalStudio} Studio</span>
-      </div>
-      <a class="nb-title-link" href="/notebooks/${nb.id}" onclick="return openNotebookSubpage(${nb.id}, decodeURIComponent('${encodeURIComponent(nb.title || "")}'))">${esc(nb.title)}</a>
-      ${studioBlock}
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding-top:6px;border-top:1px dashed var(--line);margin-top:auto">
-        <span class="sub mono">${esc((nb.remote_notebook_id || "").slice(0, 12))}…</span>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <a class="btn primary sm" href="/notebooks/${nb.id}" onclick="return openNotebookSubpage(${nb.id}, decodeURIComponent('${encodeURIComponent(nb.title || "")}'))" style="text-decoration:none">📖 进入子网页</a>
-          ${scanned ? `<button class="btn sm" onclick="refreshSingleNbStats(${nb.id}, this)">↻</button>` : ""}
-          ${nb.web_url && safeHttpUrl(nb.web_url) ? `<a class="btn sm" href="${esc(safeHttpUrl(nb.web_url))}" target="_blank" rel="noopener" style="text-decoration:none">↗ 原页</a>` : ""}
-        </div>
-      </div>
-    </div>`;
-  }).join("");
+    }).join("");
+  }
 
   const totalPages = Math.max(1, Math.ceil(STATE.nb.total / STATE.nb.limit));
   const curPage = Math.floor(STATE.nb.offset / STATE.nb.limit) + 1;
@@ -2085,8 +2424,12 @@ async function cancelTask(id){
   catch(e){ toast(e.message, true); }
 }
 async function retryTask(id){
-  try{ await api(`/api/tasks/${id}/retry`, {method:"POST"}); await refreshAll(); toast("已重新入队 #" + id); }
-  catch(e){ toast(e.message, true); }
+  try{
+    await api(`/api/tasks/${id}/retry`, {method:"POST"});
+    api("/api/tasks/tick", {method:"POST"}).catch(() => {});
+    await refreshAll();
+    toast("已重新入队并触发调度 #" + id);
+  }catch(e){ toast(e.message, true); }
 }
 async function backupDriveNow(){
   try{ const r = await api("/api/drive/backup-now", {method:"POST"}); toast("已备份至 " + r.backup_path); }
@@ -2100,7 +2443,7 @@ async function ingestSelectedDriveFiles(alsoGenerate){
   try{
     await api(`/api/topics/${topicId}/ingest`, {method:"POST", body:JSON.stringify({file_paths:files})});
     if(alsoGenerate){
-      await api("/api/tasks/batch", {method:"POST", body:JSON.stringify({topic_ids:[topicId], actions:["audio","quiz","report"], language:$("#stLang").value || "zh-Hans"})});
+      await api("/api/tasks/batch", {method:"POST", body:JSON.stringify({topic_ids:[topicId], actions:["audio","quiz","report"], language:$("#stLang").value || "zh_Hans"})});
     }
     STATE.selectedDriveFiles.clear();
     await Promise.all([refreshAll(), loadDrive()]);
@@ -2139,11 +2482,21 @@ async function exportBackupJson(){
 }
 
 /* Modals */
-function showModal(html){ $("#modalBody").innerHTML = html; $("#overlay").classList.add("show"); }
+function showModal(html, wide=false){
+  const body = $("#modalBody");
+  body.classList.toggle("wide", Boolean(wide));
+  body.innerHTML = html;
+  $("#overlay").classList.add("show");
+}
 function closeModal(){
   if(window._oauthPollTimer){ clearInterval(window._oauthPollTimer); window._oauthPollTimer = null; }
   if(window._ch2PollTimer){ clearInterval(window._ch2PollTimer); window._ch2PollTimer = null; }
   $("#overlay").classList.remove("show");
+  const body = $("#modalBody");
+  if(body){
+    body.classList.remove("wide");
+    body.innerHTML = "";
+  }
 }
 document.addEventListener("keydown", e => { if(e.key === "Escape") closeModal(); });
 
@@ -2240,30 +2593,81 @@ async function submitIngest(topicId){
   }catch(e){ toast(e.message, true); }
 }
 
+function onBatchActChange(){
+  const checked = Array.from(document.querySelectorAll('input[name="bAct"]:checked')).map(el => el.value);
+  const hasCine = checked.includes("cinematic_video");
+  const onlyCine = hasCine && checked.length === 1;
+  const langSel = $("#bLang");
+  const lockNote = $("#bLangLockNote");
+  const cineWrap = $("#bCinematicPromptWrap");
+  if(hasCine){
+    if(langSel){
+      if(!langSel.dataset.prevLang && langSel.value !== "en") langSel.dataset.prevLang = langSel.value;
+      if(onlyCine){
+        langSel.value = "en";
+        langSel.disabled = true;
+      }else{
+        langSel.disabled = false;
+      }
+    }
+    if(lockNote){
+      lockNote.style.display = "block";
+      lockNote.innerHTML = onlyCine
+        ? '<span class="pill p-amber">🔒 电影级视频固定使用英文 (en) 生成</span>'
+        : '<span class="pill p-amber">🔒 电影级视频自动锁定英文 (en)，其余项按上方语言生成</span>';
+    }
+    if(cineWrap) cineWrap.style.display = "block";
+  }else{
+    if(langSel){
+      langSel.disabled = false;
+      if(langSel.dataset.prevLang){
+        langSel.value = langSel.dataset.prevLang;
+        delete langSel.dataset.prevLang;
+      }
+    }
+    if(lockNote) lockNote.style.display = "none";
+    if(cineWrap) cineWrap.style.display = "none";
+  }
+}
+
 function openBatchModal(singleTopicId=null){
   const ids = singleTopicId ? [singleTopicId] : Array.from(STATE.selectedTopics);
   if(!ids.length) return toast("请先勾选至少一个主题", true);
   const actions = [
-    ["audio","🎙️ 音频播客"],["video","🎬 视频概览"],["cinematic_video","🎥 电影级视频"],
+    ["audio","🎙️ 音频播客"],["video","🎬 视频概览"],["cinematic_video","🎥 电影级视频(固定en)"],
     ["slide_deck","📊 幻灯片"],["quiz","📝 测验"],["flashcards","🗂️ 闪卡"],
     ["infographic","🖼️ 信息图"],["mind_map","🧠 思维导图"],["report","📄 简报文档"],
     ["study_guide","📚 学习指南"],["data_table","📈 数据表"],["chat","💬 Chat 提问导出"]
   ];
   const acctOpts = ['<option value="">自动调度 (按 5h/周额度最优分配)</option>']
     .concat(STATE.accounts.map(a => `<option value="${a.id}">${esc(a.alias)} (${esc(a.tier)})</option>`)).join("");
+  const defLang = (STATE.settings.default_language || "zh_Hans").replace("zh-Hans", "zh_Hans");
   showModal(`<h3>批量排程 Studio / Chat（已选 ${ids.length} 个主题）</h3>
     <div class="form-grid">
       <div class="full">
         <div style="font-size:12px;color:var(--muted)">选择要生成的产出（可多选）：</div>
         <div class="check-grid">
-          ${actions.map(([v,lbl]) => `<label class="check-item"><input type="checkbox" name="bAct" value="${v}"><span>${lbl}</span></label>`).join("")}
+          ${actions.map(([v,lbl]) => `<label class="check-item"><input type="checkbox" name="bAct" value="${v}" onchange="onBatchActChange()"><span>${lbl}</span></label>`).join("")}
         </div>
       </div>
       <label>指定偏好账号<select id="bPref">${acctOpts}</select></label>
       <label>档位硬性要求<select id="bTier"><option value="any">不限（跟随全局策略）</option><option value="ultra">仅限 Ultra</option><option value="pro_plus">Pro / Plus / Ultra</option></select></label>
-      <label>输出语言<input id="bLang" value="${esc(STATE.settings.default_language || "zh-Hans")}"></label>
+      <label>输出语言
+        <select id="bLang">
+          <option value="zh_Hans" ${defLang==="zh_Hans"?"selected":""}>中文（简体 · zh_Hans）</option>
+          <option value="zh_Hant" ${defLang==="zh_Hant"?"selected":""}>中文（繁體 · zh_Hant）</option>
+          <option value="en" ${defLang==="en"?"selected":""}>English (en)</option>
+          <option value="ja" ${defLang==="ja"?"selected":""}>日本語 (ja)</option>
+          <option value="ko" ${defLang==="ko"?"selected":""}>한국어 (ko)</option>
+        </select>
+      </label>
       <label>优先级<input id="bPrio" type="number" value="50"></label>
-      <label class="full">聚焦提示词 / Chat 提问内容<textarea id="bInst" rows="3" placeholder="可选聚焦方向"></textarea></label>
+      <div class="full" id="bLangLockNote" style="display:none"></div>
+      <label class="full">聚焦提示词 / Chat 提问内容<textarea id="bInst" rows="2" placeholder="可选聚焦方向"></textarea></label>
+      <div class="full cinematic-box" id="bCinematicPromptWrap" style="display:none">
+        <div style="font-weight:700;font-size:12.5px;color:#7a510c;margin-bottom:4px">🎥 电影级视频专属提示词（固定英文 en，留空也可直接生成）</div>
+        <textarea id="bCinematicInst" rows="2" style="width:100%" placeholder="例如：Focus on visual intuition and core architecture trade-offs..."></textarea>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal()">取消</button>
@@ -2274,16 +2678,22 @@ async function submitBatch(topicIds){
   const acts = Array.from(document.querySelectorAll('input[name="bAct"]:checked')).map(el => el.value);
   if(!acts.length) return toast("请至少勾选一种产出类型", true);
   try{
+    const onlyCine = acts.length === 1 && acts[0] === "cinematic_video";
+    const langVal = onlyCine ? "en" : ($("#bLang").value.trim() || "zh_Hans");
+    const genInst = $("#bInst").value.trim() || null;
+    const cineInst = ($("#bCinematicInst") && $("#bCinematicInst").value.trim()) || null;
     const r = await api("/api/tasks/batch", {method:"POST", body:JSON.stringify({
       topic_ids: topicIds, actions: acts,
-      instructions: $("#bInst").value.trim() || null,
-      question: $("#bInst").value.trim() || null,
-      language: $("#bLang").value.trim() || "zh-Hans",
+      instructions: genInst,
+      cinematic_instructions: cineInst,
+      question: genInst,
+      language: langVal,
       preferred_account_id: Number($("#bPref").value) || null,
       tier_requirement: $("#bTier").value,
       priority: Number($("#bPrio").value) || 50
     })});
-    closeModal(); await refreshAll(); toast(`已排入 ${r.created_count} 个任务 (批次 ${r.batch_id})`);
+    api("/api/tasks/tick", {method:"POST"}).catch(() => {});
+    closeModal(); await refreshAll(); toast(`已排入 ${r.created_count} 个任务并启动调度 (批次 ${r.batch_id})`);
   }catch(e){ toast(e.message, true); }
 }
 
@@ -2296,8 +2706,8 @@ async function loadSystemInfo(){
     if(badge){
       badge.style.display = "inline-block";
       badge.textContent = info.desktop_mode
-        ? `🪟 桌面窗口 v${esc(info.app_version || "0.3.0")}`
-        : `💻 ${esc(info.arch || "x64")} Web v${esc(info.app_version || "0.3.0")}`;
+        ? `🪟 桌面窗口 v${esc(info.app_version || "0.4.0")}`
+        : `💻 ${esc(info.arch || "x64")} Web v${esc(info.app_version || "0.4.0")}`;
     }
     const revBtn = $("#btnRevealDataDir");
     if(revBtn && info.os === "win32"){

@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 import random
+import time
 import weakref
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -22,7 +23,7 @@ from ..db import (
     get_settings_map,
 )
 from .coupling import ensure_topic_notebook_for_account, extract_drive_file_id
-from .drive_hub import ensure_topic_folders, save_text_export
+from .drive_hub import ensure_topic_folders, sanitize_topic_name, save_text_export
 from .quota_poller import poll_one_account
 
 logger = logging.getLogger(__name__)
@@ -273,6 +274,10 @@ def select_account_for_task(
     return None, "waiting_quota", best_cost, wake_dt.isoformat()
 
 
+_BG_SCHEDULER_TASKS: set[asyncio.Task[Any]] = set()
+_ACCOUNT_COOLDOWN_UNTIL: dict[tuple[str, int], float] = {}
+
+
 async def _execute_single_task(
     task: dict[str, Any],
     account: dict[str, Any],
@@ -280,6 +285,7 @@ async def _execute_single_task(
     later: bool,
     est_cost: float,
     db_path: Path | None = None,
+    mark_running: bool = True,
 ) -> None:
     settings = await get_settings_map(db_path=db_path)
     router = CapabilityRouter(settings)
@@ -297,19 +303,20 @@ async def _execute_single_task(
         else None
     )
 
-    await execute(
-        """
-        UPDATE tasks
-           SET status = 'running',
-               assigned_account_id = ?,
-               est_cost_pct = ?,
-               started_at = datetime('now', 'localtime'),
-               error_msg = NULL
-         WHERE id = ?
-        """,
-        (account["id"], est_cost, task["id"]),
-        db_path=db_path,
-    )
+    if mark_running:
+        await execute(
+            """
+            UPDATE tasks
+               SET status = 'running',
+                   assigned_account_id = ?,
+                   est_cost_pct = ?,
+                   started_at = datetime('now', 'localtime'),
+                   error_msg = NULL
+             WHERE id = ?
+            """,
+            (account["id"], est_cost, task["id"]),
+            db_path=db_path,
+        )
 
     channel_used = "notebooklm_py"
     remote_task_id = None
@@ -318,15 +325,17 @@ async def _execute_single_task(
     final_status = "done"
 
     try:
-        # Resolve target notebook via coupling engine (or explicit notebook_id).
-        nb_row = None
-        remote_nb_id = payload.get("remote_notebook_id")
-        if not remote_nb_id and task.get("notebook_id"):
-            nb_row = await fetch_one(
+        # Resolve target notebook (always load nb_row when notebook_id is present so artifacts link properly).
+        nb_row = (
+            await fetch_one(
                 "SELECT * FROM notebooks WHERE id = ?", (task["notebook_id"],), db_path=db_path
             )
-            if nb_row:
-                remote_nb_id = nb_row["remote_notebook_id"]
+            if task.get("notebook_id")
+            else None
+        )
+        remote_nb_id = payload.get("remote_notebook_id") or (
+            nb_row["remote_notebook_id"] if nb_row else None
+        )
 
         if not remote_nb_id and topic is not None:
             nb_row, remote_nb_id, is_shared = await ensure_topic_notebook_for_account(
@@ -340,11 +349,24 @@ async def _execute_single_task(
 
         hub_root = settings.get("drive_hub_root") or ""
         topic_name = topic["name"] if topic else None
-        out_dir = (
-            str(ensure_topic_folders(hub_root, topic_name)["artifacts"])
-            if topic_name and hub_root
-            else str(Path(hub_root) / "03_Exports")
-        )
+        if topic_name and hub_root:
+            out_dir = str(ensure_topic_folders(hub_root, topic_name)["artifacts"])
+        elif nb_row and nb_row.get("title") and hub_root:
+            out_dir = str(Path(hub_root) / "03_Exports" / sanitize_topic_name(nb_row["title"]))
+        else:
+            out_dir = str(Path(hub_root) / "03_Exports")
+
+        target_nb_row_id = nb_row["id"] if nb_row else task.get("notebook_id")
+
+        async def _on_started(remote_tid: str, lang_note: str | None) -> None:
+            msg = f"云端生成中 (task_id={remote_tid})…"
+            if lang_note:
+                msg = f"{lang_note} · {msg}"
+            await execute(
+                "UPDATE tasks SET remote_task_id = ?, result_text = ? WHERE id = ?",
+                (remote_tid, msg, task["id"]),
+                db_path=db_path,
+            )
 
         if task_type == "ingest_url":
             _, channel_used = await router.ingest_url(
@@ -400,13 +422,15 @@ async def _execute_single_task(
                         task.get("topic_id"),
                         task["id"],
                         account["id"],
-                        nb_row["id"] if nb_row else None,
+                        target_nb_row_id,
                         payload["question"][:80],
                         result_artifact_path,
                     ),
                     db_path=db_path,
                 )
         elif task_type in STUDIO_TASKS:
+            raw_lang = payload.get("language") or settings.get("default_language") or "zh_Hans"
+            gen_title_prefix = topic_name or (nb_row["title"] if nb_row and nb_row.get("title") else "")
             try:
                 res, channel_used = await router.generate_and_download(
                     account,
@@ -414,9 +438,10 @@ async def _execute_single_task(
                     task_type,
                     out_dir,
                     instructions=payload.get("instructions"),
-                    language=payload.get("language") or settings.get("default_language") or "zh-Hans",
+                    language=raw_lang,
                     later=later,
-                    title_prefix=topic_name or "",
+                    title_prefix=gen_title_prefix,
+                    on_started=_on_started,
                 )
             except Exception as shared_exc:
                 # Fallback to Drive mirror mode if shared Editor execution failed due to permission/owner limits.
@@ -425,26 +450,32 @@ async def _execute_single_task(
                     nb_row, mirror_nb_id, _ = await ensure_topic_notebook_for_account(
                         topic, account, router, db_path=db_path, force_mirror=True
                     )
+                    target_nb_row_id = nb_row["id"] if nb_row else task.get("notebook_id")
                     res, channel_used = await router.generate_and_download(
                         account,
                         mirror_nb_id,
                         task_type,
                         out_dir,
                         instructions=payload.get("instructions"),
-                        language=payload.get("language") or settings.get("default_language") or "zh-Hans",
+                        language=raw_lang,
                         later=later,
-                        title_prefix=topic_name or "",
+                        title_prefix=gen_title_prefix,
+                        on_started=_on_started,
                     )
                 else:
                     raise
 
             remote_task_id = res.get("remote_task_id")
             result_artifact_path = res.get("local_drive_path")
+            note_prefix = f"{res['note']} · " if res.get("note") else ""
             if res.get("status") == "deferred_later":
                 final_status = "deferred_later"
-                result_text = f"已提交 Generate Later 延时队列 (task_id={remote_task_id})"
+                result_text = f"{note_prefix}已提交 Generate Later 延时队列 (task_id={remote_task_id})"
+            elif res.get("status") == "submitted_timeout":
+                final_status = "deferred_later"
+                result_text = res.get("note") or f"已提交云端生成 (task_id={remote_task_id})，请稍后同步查看"
             else:
-                result_text = f"已生成并归档至 {result_artifact_path}"
+                result_text = f"{note_prefix}已生成并归档至 {result_artifact_path}"
                 await execute(
                     """
                     INSERT INTO artifacts (
@@ -456,7 +487,7 @@ async def _execute_single_task(
                         task.get("topic_id"),
                         task["id"],
                         account["id"],
-                        nb_row["id"] if nb_row else None,
+                        target_nb_row_id,
                         remote_task_id,
                         task_type,
                         res.get("title") or task_type,
@@ -515,6 +546,12 @@ async def _execute_single_task(
             (channel_used, str(exc)[:1000], task["id"]),
             db_path=db_path,
         )
+    finally:
+        delay_min = float(settings.get("task_delay_min_sec") or 8)
+        delay_max = float(settings.get("task_delay_max_sec") or 18)
+        _ACCOUNT_COOLDOWN_UNTIL[(str(db_path or ""), int(account["id"]))] = (
+            time.monotonic() + random.uniform(delay_min, max(delay_min, delay_max))
+        )
 
 
 _SCHEDULER_LOCKS: weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, asyncio.Lock] = (
@@ -531,14 +568,32 @@ def _get_scheduler_lock() -> asyncio.Lock:
     return lock
 
 
-async def run_scheduler_tick(*, db_path: Path | None = None) -> int:
+async def cancel_background_tasks() -> None:
+    """Cancel all in-flight asynchronous task runners on application shutdown."""
+    tasks = list(_BG_SCHEDULER_TASKS)
+    for t in tasks:
+        t.cancel()
+    if tasks:
+        await asyncio.gather(*tasks, return_exceptions=True)
+    _BG_SCHEDULER_TASKS.clear()
+
+
+async def run_scheduler_tick(*, db_path: Path | None = None, wait: bool = False) -> int:
     """Inspect pending/waiting tasks and dispatch eligible work across idle accounts."""
+    coros: list[Any] = []
     async with _get_scheduler_lock():
-        return await _run_scheduler_tick_locked(db_path=db_path)
+        dispatched, coros = await _run_scheduler_tick_locked(db_path=db_path, wait=wait)
+    if wait and coros:
+        await asyncio.gather(*coros)
+    return dispatched
 
 
-async def _run_scheduler_tick_locked(*, db_path: Path | None = None) -> int:
+async def _run_scheduler_tick_locked(
+    *, db_path: Path | None = None, wait: bool = False
+) -> tuple[int, list[Any]]:
     now_utc = datetime.now(timezone.utc)
+    now_mono = time.monotonic()
+    db_key = str(db_path or "")
     tasks = await fetch_all(
         """
         SELECT t.*, nb.source_count AS nb_source_count
@@ -551,17 +606,24 @@ async def _run_scheduler_tick_locked(*, db_path: Path | None = None) -> int:
         db_path=db_path,
     )
     if not tasks:
-        return 0
+        return 0, []
 
     running_rows = await fetch_all(
         "SELECT assigned_account_id FROM tasks WHERE status = 'running' AND assigned_account_id IS NOT NULL",
         db_path=db_path,
     )
     busy_ids: set[int] = {int(r["assigned_account_id"]) for r in running_rows}
+    for (k_db, aid), until in list(_ACCOUNT_COOLDOWN_UNTIL.items()):
+        if k_db == db_key and until > now_mono:
+            busy_ids.add(aid)
+        elif until <= now_mono:
+            _ACCOUNT_COOLDOWN_UNTIL.pop((k_db, aid), None)
+
     accounts = await get_accounts_with_latest_quota(db_path=db_path)
     settings = await get_settings_map(db_path=db_path)
 
     dispatched = 0
+    sync_coros: list[Any] = []
     for task in tasks:
         sched_after = _parse_iso_utc(task.get("scheduled_after"))
         if sched_after is not None and sched_after > now_utc:
@@ -580,16 +642,36 @@ async def _run_scheduler_tick_locked(*, db_path: Path | None = None) -> int:
             task, accounts, settings, busy_ids, source_count=source_count, now=now_utc
         )
 
-        if decision == "run" and acct is not None:
+        if decision in ("run", "deferred_later") and acct is not None:
             busy_ids.add(acct["id"])
-            await _execute_single_task(task, acct, later=False, est_cost=est_cost, db_path=db_path)
-            dispatched += 1
-            delay_min = float(settings.get("task_delay_min_sec") or 8)
-            delay_max = float(settings.get("task_delay_max_sec") or 18)
-            await asyncio.sleep(random.uniform(delay_min, max(delay_min, delay_max)))
-        elif decision == "deferred_later" and acct is not None:
-            busy_ids.add(acct["id"])
-            await _execute_single_task(task, acct, later=True, est_cost=est_cost, db_path=db_path)
+            later_flag = decision == "deferred_later"
+            await execute(
+                """
+                UPDATE tasks
+                   SET status = 'running',
+                       assigned_account_id = ?,
+                       est_cost_pct = ?,
+                       started_at = datetime('now', 'localtime'),
+                       error_msg = NULL
+                 WHERE id = ?
+                """,
+                (acct["id"], est_cost, task["id"]),
+                db_path=db_path,
+            )
+            coro = _execute_single_task(
+                task,
+                acct,
+                later=later_flag,
+                est_cost=est_cost,
+                db_path=db_path,
+                mark_running=False,
+            )
+            if wait:
+                sync_coros.append(coro)
+            else:
+                bg = asyncio.create_task(coro)
+                _BG_SCHEDULER_TASKS.add(bg)
+                bg.add_done_callback(_BG_SCHEDULER_TASKS.discard)
             dispatched += 1
         elif decision == "waiting_quota":
             await execute(
@@ -610,7 +692,7 @@ async def _run_scheduler_tick_locked(*, db_path: Path | None = None) -> int:
                 (est_cost, task["id"]),
                 db_path=db_path,
             )
-    return dispatched
+    return dispatched, sync_coros
 
 
 async def scheduler_loop(stop_event: asyncio.Event, *, db_path: Path | None = None) -> None:

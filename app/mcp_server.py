@@ -245,12 +245,13 @@ async def fleet_enqueue_batch(
     topic_name: str,
     actions: list[str],
     instructions: str | None = None,
-    language: str = "zh-Hans",
+    language: str = "zh_Hans",
     policy: str | None = None,
     preferred_alias: str | None = None,
 ) -> dict[str, Any]:
     """Queue batch Studio generation or Chat Q&A tasks for a topic across the quota-aware account pool."""
     await _ensure_ready()
+    resolved_lang = nlm_py_adapter.normalize_studio_language(language)
     topic = await fetch_one("SELECT * FROM topics WHERE name = ?", (topic_name.strip(),))
     if topic is None:
         settings = await get_settings_map()
@@ -276,7 +277,7 @@ async def fleet_enqueue_batch(
     batch_id = f"B-{uuid.uuid4().hex[:8]}"
     task_ids: list[int] = []
     for action in actions:
-        payload: dict[str, Any] = {"language": language}
+        payload: dict[str, Any] = {"language": resolved_lang}
         if instructions:
             payload["instructions"] = instructions
         if action == "chat":

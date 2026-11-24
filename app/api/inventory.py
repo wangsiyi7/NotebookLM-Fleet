@@ -58,6 +58,7 @@ class NotebookChatRequest(BaseModel):
 class NotebookGenerateRequest(BaseModel):
     actions: list[str]
     instructions: str | None = None
+    cinematic_instructions: str | None = None
     language: str | None = None
 
 
@@ -470,6 +471,7 @@ async def list_synced_notebooks(
     account_id: int | None = Query(default=None),
     only_with_studio: bool = Query(default=False),
     only_owner: bool = Query(default=False),
+    studio_kind: str = Query(default=""),
     sort: str = Query(default="recent"),
     limit: int = Query(default=60, ge=1, le=300),
     offset: int = Query(default=0, ge=0),
@@ -499,11 +501,8 @@ async def list_synced_notebooks(
     }
     order_sql = order_map.get(sort, order_map["recent"])
 
-    total_row = await fetch_one(f"SELECT COUNT(*) AS cnt FROM notebooks nb {where_sql}", tuple(params))
-    total = int((total_row or {}).get("cnt") or 0)
-
-    rows = await fetch_all(
-        f"""
+    clean_kind = studio_kind.strip()
+    select_sql = f"""
         SELECT nb.id, nb.topic_id, nb.account_id, nb.remote_notebook_id, nb.title,
                nb.is_master, nb.role, nb.source_count, nb.artifact_count,
                nb.shared_emails_json, nb.studio_stats_json, nb.studio_synced_at, nb.synced_at,
@@ -515,20 +514,37 @@ async def list_synced_notebooks(
           LEFT JOIN topics t ON t.id = nb.topic_id
           {where_sql}
          ORDER BY {order_sql}
-         LIMIT ? OFFSET ?
-        """,
-        (*params, limit, offset),
-    )
+    """
+
+    if clean_kind:
+        all_rows = await fetch_all(select_sql, tuple(params))
+        enriched_all = [_enrich_notebook_row(r) for r in all_rows]
+        matched = [
+            nb
+            for nb in enriched_all
+            if any(
+                k.get("kind") == clean_kind and int(k.get("count") or 0) > 0
+                for k in (nb.get("studio_stats") or {}).get("by_kind") or []
+            )
+        ]
+        total = len(matched)
+        notebooks_out = matched[offset : offset + limit]
+    else:
+        total_row = await fetch_one(f"SELECT COUNT(*) AS cnt FROM notebooks nb {where_sql}", tuple(params))
+        total = int((total_row or {}).get("cnt") or 0)
+        rows = await fetch_all(f"{select_sql} LIMIT ? OFFSET ?", (*params, limit, offset))
+        notebooks_out = [_enrich_notebook_row(r) for r in rows]
 
     all_stats_rows = await fetch_all(
         "SELECT studio_stats_json, artifact_count, studio_synced_at FROM notebooks"
     )
     global_summary = _aggregate_global_studio(all_stats_rows)
     return {
-        "notebooks": [_enrich_notebook_row(r) for r in rows],
+        "notebooks": notebooks_out,
         "total": total,
         "limit": limit,
         "offset": offset,
+        "studio_kind": clean_kind or None,
         "scanned_notebooks_count": global_summary["scanned_notebooks"],
         "global_studio_summary": global_summary,
     }
@@ -833,20 +849,30 @@ async def generate_for_notebook(notebook_id: int, body: NotebookGenerateRequest)
         raise HTTPException(status_code=400, detail="请至少选择一种 Studio 生成类型")
     nb_row = await _load_notebook_context(notebook_id)
     settings = await get_settings_map()
-    lang = (body.language or settings.get("default_language") or "zh-Hans").strip()
+    try:
+        lang = nlm_py_adapter.normalize_studio_language(
+            body.language or settings.get("default_language") or "zh_Hans"
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     batch_id = f"NB-{notebook_id}-{uuid.uuid4().hex[:6]}"
     task_ids: list[int] = []
 
+    general_inst = (body.instructions or "").strip() or None
+    cinematic_inst = (body.cinematic_instructions or "").strip() or general_inst
+
     for act in actions:
+        act_lang, _ = nlm_py_adapter.resolve_studio_language_for_kind(act, lang)
         payload: dict[str, Any] = {
             "remote_notebook_id": nb_row["remote_notebook_id"],
-            "language": lang,
+            "language": act_lang,
             "strict_account": True,
         }
-        if body.instructions:
-            payload["instructions"] = body.instructions
+        act_inst = cinematic_inst if act == "cinematic_video" else general_inst
+        if act_inst:
+            payload["instructions"] = act_inst
         if act == "chat":
-            payload["question"] = body.instructions or "请系统梳理本笔记本全部来源的核心框架与可执行建议。"
+            payload["question"] = act_inst or "请系统梳理本笔记本全部来源的核心框架与可执行建议。"
             payload["save_as_note"] = True
 
         tid = await execute(

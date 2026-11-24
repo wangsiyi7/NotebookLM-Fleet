@@ -27,7 +27,7 @@ from .config import get_settings
 from .core.cloud_bridge import cloud_bridge_engine
 from .core.drive_hub import ensure_hub_structure
 from .core.quota_poller import quota_poller_loop
-from .core.scheduler import scheduler_loop
+from .core.scheduler import cancel_background_tasks, scheduler_loop
 from .core.win_runtime import get_resource_path
 from .db import (
     execute,
@@ -84,9 +84,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             t.cancel()
         if bg_tasks:
             await asyncio.gather(*bg_tasks, return_exceptions=True)
+        await cancel_background_tasks()
 
 
-app = FastAPI(title="NotebookLM-Fleet Control Center", version="0.3.1", lifespan=lifespan)
+app = FastAPI(title="NotebookLM-Fleet Control Center", version="0.4.0", lifespan=lifespan)
 
 app.include_router(accounts_router)
 app.include_router(inventory_router)

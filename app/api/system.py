@@ -60,7 +60,7 @@ async def get_system_info(request: Request) -> dict[str, Any]:
         "arch": platform.machine(),
         "python": platform.python_version(),
         "is_frozen": is_frozen(),
-        "app_version": "0.3.1",
+        "app_version": "0.4.0",
         "desktop_mode": ctrl is not None,
         "desktop_name": get_current_desktop_name(),
         "interactive_desktop": is_interactive_desktop(),

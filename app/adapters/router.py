@@ -213,9 +213,10 @@ class CapabilityRouter:
         output_dir: str,
         *,
         instructions: str | None = None,
-        language: str = "zh-Hans",
+        language: str = "zh_Hans",
         later: bool = False,
         title_prefix: str = "",
+        on_started: Any = None,
     ) -> tuple[dict[str, Any], str]:
         res = await self.nlm.generate_and_download(
             account["nlm_profile"],
@@ -226,5 +227,6 @@ class CapabilityRouter:
             language=language,
             later=later,
             title_prefix=title_prefix,
+            on_started=on_started,
         )
         return res, "notebooklm_py"

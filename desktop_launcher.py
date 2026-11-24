@@ -245,7 +245,7 @@ class DesktopController:
         _remove_runtime_port()
 
 
-def _start_uvicorn_background(port: int) -> tuple[Any, threading.Thread, Any]:
+def _start_uvicorn_background(port: int, host: str = "127.0.0.1") -> tuple[Any, threading.Thread, Any]:
     import uvicorn
 
     from app.main import app as fastapi_app
@@ -253,7 +253,7 @@ def _start_uvicorn_background(port: int) -> tuple[Any, threading.Thread, Any]:
     fastapi_app.state.bound_port = port
     config = uvicorn.Config(
         fastapi_app,
-        host="127.0.0.1",
+        host=host or "127.0.0.1",
         port=int(port),
         log_config=None,
         access_log=False,
@@ -329,7 +329,7 @@ def _start_tray_background(controller: DesktopController) -> bool:
         icon = pystray.Icon(
             "NotebookLM-Fleet",
             _load_tray_image(),
-            "NotebookLM-Fleet v0.3.1",
+            "NotebookLM-Fleet v0.4.0",
             menu,
         )
         controller.tray_icon = icon
@@ -357,10 +357,11 @@ def _launch_browser_app_fallback(base_url: str, controller: DesktopController) -
         time.sleep(0.5)
 
 
-def _run_server_only(port: int | None, no_browser: bool) -> int:
+def _run_server_only(port: int | None, no_browser: bool, host: str = "127.0.0.1") -> int:
     _configure_logging()
     chosen_port = int(port) if port else find_available_port(8765, 8799)
-    server, thread, _ = _start_uvicorn_background(chosen_port)
+    bind_host = (host or "127.0.0.1").strip() or "127.0.0.1"
+    server, thread, _ = _start_uvicorn_background(chosen_port, host=bind_host)
     if not _wait_for_health(chosen_port, timeout_sec=20.0):
         logger.error("Embedded server failed to respond on port %s", chosen_port)
         server.should_exit = True
@@ -409,7 +410,7 @@ def _run_desktop_gui(port: int | None) -> int:
         import webview
 
         main_win = webview.create_window(
-            title="NotebookLM-Fleet v0.3.1 · 多账号中控与云盘互通",
+            title="NotebookLM-Fleet v0.4.0 · 多账号中控与云盘互通",
             url=f"{base_url}/",
             width=1440,
             height=900,
@@ -473,12 +474,13 @@ def main(argv: list[str] | None = None) -> int:
 
     parser = argparse.ArgumentParser(description="NotebookLM-Fleet Desktop Launcher")
     parser.add_argument("--server-only", action="store_true", help="Run headless FastAPI backend without desktop window")
+    parser.add_argument("--host", type=str, default="127.0.0.1", help="Bind host in --server-only mode (e.g. 0.0.0.0 for LAN)")
     parser.add_argument("--port", type=int, default=None, help="Bind local TCP port (default auto-probe from 8765)")
     parser.add_argument("--no-browser", action="store_true", help="Do not auto-open browser in --server-only mode")
     parsed, _unknown = parser.parse_known_args(args_list)
 
     if parsed.server_only:
-        return _run_server_only(parsed.port, parsed.no_browser)
+        return _run_server_only(parsed.port, parsed.no_browser, host=parsed.host)
     return _run_desktop_gui(parsed.port)
 
 

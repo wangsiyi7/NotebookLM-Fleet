@@ -40,7 +40,7 @@ def default_settings_map(settings: Settings | None = None) -> dict[str, str]:
         "official_api_enabled": "false",
         "official_proxy_url": "",
         "official_mcp_last_probe_json": "",
-        "default_language": "zh-Hans",
+        "default_language": "zh_Hans",
         "baidupan_default_gdrive_subdir": "百度网盘同步",
         "baidupan_default_upload_dir": "/NotebookLM_同步",
         "supabase_enabled": "false",
@@ -92,6 +92,10 @@ async def init_db(db_path: Path | None = None, settings: Settings | None = None)
                 "INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)",
                 (key, val),
             )
+        # Upgrade legacy hyphenated BCP-47 language code to Google's wire format (zh_Hans).
+        await conn.execute(
+            "UPDATE app_settings SET value = 'zh_Hans' WHERE key = 'default_language' AND value = 'zh-Hans'"
+        )
 
         # Seed a starter Ultra hub account only on an empty ledger (never hardcode personal emails).
         cur = await conn.execute("SELECT COUNT(*) AS cnt FROM accounts")

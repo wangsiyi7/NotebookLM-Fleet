@@ -1,6 +1,6 @@
-# Build Windows x64 EXE, Portable ZIP, and Setup Installer for NotebookLM-Fleet
+﻿# Build Windows x64 EXE, Portable ZIP, and Setup Installer for NotebookLM-Fleet
 param(
-    [string]$Version = "0.3.1"
+    [string]$Version = "0.4.0"
 )
 
 $ErrorActionPreference = "Stop"
@@ -46,6 +46,34 @@ if (Test-Path $PortableStage) { Remove-Item $PortableStage -Recurse -Force }
 New-Item -ItemType Directory -Path $PortableStage -Force | Out-Null
 Copy-Item -Path (Join-Path $ExeDir "*") -Destination $PortableStage -Recurse -Force
 "portable=1" | Set-Content -Path (Join-Path $PortableStage "portable.flag") -Encoding ASCII
+
+$Utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+$DesktopCmd = "@echo off`r`nchcp 65001 >nul`r`ncd /d `"%~dp0`"`r`nstart `"`" `"%~dp0NotebookLM-Fleet.exe`"`r`n"
+$ServerCmd = "@echo off`r`nchcp 65001 >nul`r`ncd /d `"%~dp0`"`r`necho Starting NotebookLM-Fleet Local Web Server on http://127.0.0.1:8765 ...`r`n`"%~dp0NotebookLM-Fleet.exe`" --server-only --port 8765`r`npause`r`n"
+$ReadmeTxt = @"
+NotebookLM-Fleet v$Version Portable (Windows x64)
+=================================================
+
+1. 桌面端完整程序模式（推荐 · PyWebView2 窗口 + 系统托盘）：
+   直接双击 `NotebookLM-Fleet.exe` 或 `启动桌面应用.cmd`
+
+2. 本地 Web 服务器模式（浏览器访问 http://127.0.0.1:8765）：
+   双击 `启动本地Web服务器.cmd`
+   或运行：NotebookLM-Fleet.exe --server-only --port 8765
+
+3. 局域网 / 远程无头服务器模式（绑定 0.0.0.0）：
+   NotebookLM-Fleet.exe --server-only --host 0.0.0.0 --port 8765 --no-browser
+
+4. AI IDE 原生 Stdio MCP 模式：
+   NotebookLM-Fleet.exe --mcp
+
+5. 便携模式数据目录：
+   因当前目录包含 `portable.flag`，所有配置与数据库默认保存在同级 `data/` 目录（支持通过环境变量 `FLEET_DATA_DIR` 覆盖）。
+"@ -replace "`r?`n", "`r`n"
+
+[System.IO.File]::WriteAllText((Join-Path $PortableStage "启动桌面应用.cmd"), $DesktopCmd, $Utf8NoBom)
+[System.IO.File]::WriteAllText((Join-Path $PortableStage "启动本地Web服务器.cmd"), $ServerCmd, $Utf8NoBom)
+[System.IO.File]::WriteAllText((Join-Path $PortableStage "运行说明_README.txt"), $ReadmeTxt, $Utf8NoBom)
 
 $PortableZip = Join-Path $ReleaseDir "NotebookLM-Fleet-v$Version-portable-win64.zip"
 Compress-Archive -Path $PortableStage -DestinationPath $PortableZip -CompressionLevel Optimal -Force

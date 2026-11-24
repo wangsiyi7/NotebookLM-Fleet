@@ -1,9 +1,9 @@
 # NotebookLM-Fleet
 
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](pyproject.toml)
-[![FastAPI](https://img.shields.io/badge/FastAPI-v0.3.1%20Desktop%20%26%20Web-009688?logo=fastapi&logoColor=white)](app/main.py)
+[![FastAPI](https://img.shields.io/badge/FastAPI-v0.4.0%20Desktop%20%26%20Web-009688?logo=fastapi&logoColor=white)](app/main.py)
 [![MCP](https://img.shields.io/badge/MCP-Local%2015%20Tools%20%2B%20Official%20Remote-136f63)](app/mcp_server.py)
-[![Windows x64](https://img.shields.io/badge/Windows%20x64-Setup%20EXE%20%26%20Portable-2456a6?logo=windows&logoColor=white)](https://github.com/wangsiyi7/NotebookLM-Fleet/releases/tag/v0.3.1)
+[![Windows x64](https://img.shields.io/badge/Windows%20x64-Setup%20EXE%20%26%20Portable-2456a6?logo=windows&logoColor=white)](https://github.com/wangsiyi7/NotebookLM-Fleet/releases/tag/v0.4.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-amber.svg)](LICENSE)
 [![CI](https://github.com/wangsiyi7/NotebookLM-Fleet/actions/workflows/ci.yml/badge.svg)](https://github.com/wangsiyi7/NotebookLM-Fleet/actions/workflows/ci.yml)
 
@@ -33,9 +33,13 @@
   - **百度网盘 ➔ Google 云盘**：递归目录保留、`.bdpart` 断点续传、按文件大小增量跳过，且支持**同步后一键自动入库到指定 NotebookLM 主题**；
   - **Google 云盘 ➔ 百度网盘**：支持反向勾选 Google 云盘 / `NLM_Hub` / 子页面本地导出成品一键上传备份至百度网盘，底层严格校验允许根路径并屏蔽密钥文件；
   - **自动探测 Google 云盘盘符**：动态扫描 Windows 逻辑盘符与 DriveFS 注册表挂载点（`我的云端硬盘` / `My Drive`），不再硬编码盘符。
-- **Windows x64 原生桌面应用 (`v0.3.0`)**
+- **Studio 多模态生产引擎 & 本地富媒体内容阅读器 (`v0.4.0`)**
+  - **Studio 协议兼容与电影级视频直出**：全链路采用 Google Wire 语言码 `zh_Hans`（兼容自动清洗 `zh-Hans` 等输入），针对官方 **电影级视频 (`cinematic_video`)** 固定锁定 `en` 提交并提供独立英文/双语提示词框与「一键直接生成」入口；引入三阶段释放锁调度与后台任务安全回收，支持长达 30–40 分钟的 Veo 3 渲染无阻塞执行。
+  - **内置本地多模态内容阅读器**：支持直接在网页/桌面窗内预览工作区与云盘导出的 **Markdown 排版渲染 / 原始文本切换**、原生内嵌 **PDF 阅读**、图片、音频播放与 `.mp4` 视频播放。
+  - **去堆积空间重设计布局**：主控台升级紧凑单行顶栏 + 6 格统合指标条 + 无滚动条分段胶囊导航；笔记本详情页（`/notebooks/{id}`）采用左侧内容主栏 + 右侧粘性 **Studio 快速生成工作台与环形占比图** 双栏布局。
+- **Windows x64 原生桌面应用 + 本地服务器双模式 (`v0.4.0`)**
   - 内置 **Edge WebView2 原生窗口 + Windows 系统托盘保活 + 单实例唤醒**，点击笔记本卡片可弹出独立原生子窗口 (`/notebooks/{id}`)；
-  - 集成系统原生文件夹选择器与资源管理器文件定位，提供 Inno Setup 标准安装向导 (`Setup-win64.exe`) 与便携压缩包 (`portable-win64.zip`)。
+  - 集成系统原生文件夹选择器与资源管理器文件定位，提供 Inno Setup 标准安装向导 (`Setup-win64.exe`，开始菜单同时提供桌面端与本地 Web 服务器快捷入口) 与绿色便携压缩包 (`portable-win64.zip`，内置 `启动桌面应用.cmd` 与 `启动本地Web服务器.cmd`)。
 - **开箱即用 Web 控制面板 + 跨 IDE 原子技能包**
   - 内置常驻全工作区文件浏览器、预览与资料篮（`http://127.0.0.1:8765`）；
   - 对上同时提供 **REST API**、**15 工具本机 Stdio MCP**（含 `fleet_bridge_*` 跨云工具）与 **6 个跨工具原子化 Skills**（适配 **Antigravity / Claude Code / Cursor / Codex / Windsurf**）。
@@ -96,16 +100,20 @@ flowchart TB
 
 ---
 
-## Windows x64 桌面安装包下载与运行 (`v0.3.0`)
+## Windows x64 桌面安装包 & 本地服务器双模运行 (`v0.4.0`)
 
-团队成员无需配置 Python 环境，直接从 [GitHub Releases v0.3.0](https://github.com/wangsiyi7/NotebookLM-Fleet/releases/tag/v0.3.0) 下载即可使用：
+团队成员无需配置 Python 环境，直接从 [GitHub Releases v0.4.0](https://github.com/wangsiyi7/NotebookLM-Fleet/releases/tag/v0.4.0) 下载即可按需运行：
 
-1. **标准安装向导（推荐）**：下载 `NotebookLM-Fleet-v0.3.0-Setup-win64.exe`，双击完成安装（支持开始菜单、桌面快捷方式与自动卸载，数据默认持久化至 `%LOCALAPPDATA%\NotebookLM-Fleet\data`）。
-2. **绿色免安装便携版**：下载 `NotebookLM-Fleet-v0.3.0-portable-win64.zip`，解压后双击 `NotebookLM-Fleet.exe` 即可运行（内置 `portable.flag`，所有配置与数据库自动保存在程序同级 `data/` 目录）。
-3. **高级命令行参数（基于编译后的 `NotebookLM-Fleet.exe`）**：
-   - `NotebookLM-Fleet.exe --server-only --port 8765 --no-browser`：纯后台 API/Web 服务模式；
+1. **完整桌面安装程序（推荐 · Setup EXE）**：下载 `NotebookLM-Fleet-v0.4.0-Setup-win64.exe`，双击安装（含桌面快捷方式、系统托盘与完整卸载，开始菜单同时提供 `NotebookLM-Fleet` 桌面窗与 `NotebookLM-Fleet (Local Web Server)` 本地服务器入口；数据持久化至 `%LOCALAPPDATA%\NotebookLM-Fleet\data`）。
+2. **绿色免安装便携压缩包（Portable ZIP）**：下载 `NotebookLM-Fleet-v0.4.0-portable-win64.zip`，解压后双击：
+   - `启动桌面应用.cmd`（或 `NotebookLM-Fleet.exe`）：启动完整桌面端应用；
+   - `启动本地Web服务器.cmd`：以纯 Web/API 服务器模式启动在 `http://127.0.0.1:8765`；
+   - 内置 `portable.flag`，所有配置与数据库自动保存在程序同级 `data/` 目录。
+3. **服务器 / 局域网与命令行模式（基于 `NotebookLM-Fleet.exe`）**：
+   - `NotebookLM-Fleet.exe --server-only --port 8765`：纯本机后台 Web/API 服务器模式并打开浏览器；
+   - `NotebookLM-Fleet.exe --server-only --host 0.0.0.0 --port 8765 --no-browser`：绑定所有网卡，适合部署在局域网或 Windows 服务器后台常驻；
    - `NotebookLM-Fleet.exe --mcp`：直接以原生 Stdio MCP Server 接入 Claude Desktop / Cursor / Antigravity；
-   - 校验压缩包完整性可使用同页发布的 `SHA256SUMS.txt`。
+   - 校验文件完整性可使用同页发布的 `SHA256SUMS.txt`。
 
 ---
 

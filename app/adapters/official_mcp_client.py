@@ -83,7 +83,7 @@ async def probe_official_mcp(
                     "params": {
                         "protocolVersion": MCP_PROTOCOL_VERSION,
                         "capabilities": {},
-                        "clientInfo": {"name": "notebooklm-fleet", "version": "0.3.1"},
+                        "clientInfo": {"name": "notebooklm-fleet", "version": "0.4.0"},
                     },
                     "id": 1,
                 }
@@ -197,7 +197,7 @@ async def call_official_mcp_tool(
                     "params": {
                         "protocolVersion": MCP_PROTOCOL_VERSION,
                         "capabilities": {},
-                        "clientInfo": {"name": "notebooklm-fleet", "version": "0.3.1"},
+                        "clientInfo": {"name": "notebooklm-fleet", "version": "0.4.0"},
                     },
                     "id": 1,
                 },

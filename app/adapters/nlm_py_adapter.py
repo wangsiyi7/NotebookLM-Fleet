@@ -8,12 +8,14 @@ import logging
 import re
 import subprocess
 import sys
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 from notebooklm import NotebookLMClient
+from notebooklm._app.language import SUPPORTED_LANGUAGES
 from notebooklm._env import ENTERPRISE_APP_HOSTS, PERSONAL_APP_HOSTS, get_base_host
 from notebooklm.auth import (
     MINIMUM_REQUIRED_COOKIES,
@@ -21,7 +23,7 @@ from notebooklm.auth import (
     _is_allowed_auth_domain,
     replace_profile_from_login,
 )
-from notebooklm.exceptions import AuthError, NotebookLMError
+from notebooklm.exceptions import AuthError, NotebookLMError, RPCError
 from notebooklm.paths import get_storage_path, list_profiles
 from notebooklm.types import (
     DriveMimeType,
@@ -582,6 +584,70 @@ def _safe_stamp() -> str:
     return datetime.now().strftime("%Y%m%d_%H%M%S")
 
 
+_LANG_ALIASES: dict[str, str] = {
+    "zh-hans": "zh_Hans",
+    "zh_hans": "zh_Hans",
+    "zh-cn": "zh_Hans",
+    "zh_cn": "zh_Hans",
+    "zh": "zh_Hans",
+    "cn": "zh_Hans",
+    "chinese": "zh_Hans",
+    "简体中文": "zh_Hans",
+    "中文": "zh_Hans",
+    "zh-hant": "zh_Hant",
+    "zh_hant": "zh_Hant",
+    "zh-tw": "zh_Hant",
+    "zh_tw": "zh_Hant",
+    "zh-hk": "zh_Hant",
+    "zh_hk": "zh_Hant",
+    "繁體中文": "zh_Hant",
+    "繁体中文": "zh_Hant",
+    "en-us": "en",
+    "en_us": "en",
+    "en-gb": "en",
+    "en_gb": "en",
+    "english": "en",
+    "英文": "en",
+    "英语": "en",
+}
+
+_SUPPORTED_LANG_CI: dict[str, str] = {k.lower(): k for k in SUPPORTED_LANGUAGES}
+
+ENGLISH_ONLY_STUDIO_KINDS: frozenset[str] = frozenset({"cinematic_video"})
+
+
+def normalize_studio_language(language: str | None) -> str:
+    """Normalize BCP-47/UI language codes (e.g. ``zh-Hans``, ``zh-CN``) to Google's wire code (``zh_Hans``)."""
+    raw = (language or "").strip()
+    if not raw:
+        return "zh_Hans"
+    low = raw.lower()
+    if low in _LANG_ALIASES:
+        return _LANG_ALIASES[low]
+    underscored = raw.replace("-", "_")
+    u_low = underscored.lower()
+    if u_low in _LANG_ALIASES:
+        return _LANG_ALIASES[u_low]
+    if u_low in _SUPPORTED_LANG_CI:
+        return _SUPPORTED_LANG_CI[u_low]
+    primary = u_low.split("_", 1)[0]
+    if primary in _SUPPORTED_LANG_CI:
+        return _SUPPORTED_LANG_CI[primary]
+    raise ValueError(
+        f"不支持的输出语言代码 {language!r}，请使用 Google 支持的代码（如 zh_Hans / zh_Hant / en / ja / ko）"
+    )
+
+
+def resolve_studio_language_for_kind(kind: str, language: str | None) -> tuple[str, str | None]:
+    """Resolve wire language and force ``en`` up front for English-only Studio kinds."""
+    normalized = normalize_studio_language(language)
+    if (kind or "").strip() in ENGLISH_ONLY_STUDIO_KINDS:
+        if normalized != "en":
+            return "en", f"电影级视频固定使用英文输出（已自动由 {normalized} 锁定为 en）"
+        return "en", None
+    return normalized, None
+
+
 async def generate_and_download(
     profile_name: str,
     notebook_id: str,
@@ -589,23 +655,30 @@ async def generate_and_download(
     output_dir: str | Path,
     *,
     instructions: str | None = None,
-    language: str = "zh-Hans",
+    language: str = "zh_Hans",
     later: bool = False,
     source_ids: list[str] | None = None,
     title_prefix: str = "",
+    on_started: Callable[[str, str | None], Any] | None = None,
 ) -> dict[str, Any]:
     """Generate a Studio artifact and download it locally (or defer via later=True)."""
+    resolved_lang, language_note = resolve_studio_language_for_kind(kind, language)
     out_dir = Path(output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     stamp = _safe_stamp()
     safe_prefix = re.sub(r'[<>:"/\\|?*\x00-\x1f]+', "_", (title_prefix or "").strip()).strip(". ")[:60]
     prefix = f"{safe_prefix}_" if safe_prefix else ""
 
+    ext = ".bin"
+    task_id = ""
+    is_scheduled = False
+
+    # Phase 1 (locked): submit creation RPC and immediately capture task_id.
     async with _get_lock(profile_name):
         async with NotebookLMClient.from_storage(profile=profile_name, keepalive=600.0) as client:
             if kind == "mind_map":
                 mm = await client.artifacts.generate_mind_map(
-                    notebook_id, source_ids=source_ids, language=language, instructions=instructions
+                    notebook_id, source_ids=source_ids, language=resolved_lang, instructions=instructions
                 )
                 target = out_dir / f"{prefix}mind_map_{stamp}.json"
                 if mm.mind_map is not None:
@@ -617,26 +690,27 @@ async def generate_and_download(
                     "remote_task_id": mm.note_id or "",
                     "local_drive_path": str(target),
                     "title": f"{prefix}mind_map_{stamp}",
+                    "note": None,
                 }
 
             if kind == "audio":
                 gen = await client.artifacts.generate_audio(
-                    notebook_id, source_ids=source_ids, language=language, instructions=instructions, later=later
+                    notebook_id, source_ids=source_ids, language=resolved_lang, instructions=instructions, later=later
                 )
                 ext = ".m4a"
             elif kind == "video":
                 gen = await client.artifacts.generate_video(
-                    notebook_id, source_ids=source_ids, language=language, instructions=instructions, later=later
+                    notebook_id, source_ids=source_ids, language=resolved_lang, instructions=instructions, later=later
                 )
                 ext = ".mp4"
             elif kind == "cinematic_video":
                 gen = await client.artifacts.generate_cinematic_video(
-                    notebook_id, source_ids=source_ids, language=language, instructions=instructions
+                    notebook_id, source_ids=source_ids, language="en", instructions=instructions
                 )
                 ext = ".mp4"
             elif kind == "slide_deck":
                 gen = await client.artifacts.generate_slide_deck(
-                    notebook_id, source_ids=source_ids, language=language, instructions=instructions, later=later
+                    notebook_id, source_ids=source_ids, language=resolved_lang, instructions=instructions, later=later
                 )
                 ext = ".pdf"
             elif kind == "quiz":
@@ -651,7 +725,7 @@ async def generate_and_download(
                 ext = ".md"
             elif kind == "infographic":
                 gen = await client.artifacts.generate_infographic(
-                    notebook_id, source_ids=source_ids, language=language, instructions=instructions, later=later
+                    notebook_id, source_ids=source_ids, language=resolved_lang, instructions=instructions, later=later
                 )
                 ext = ".png"
             elif kind == "report":
@@ -659,7 +733,7 @@ async def generate_and_download(
                     notebook_id,
                     report_format=ReportFormat.BRIEFING_DOC,
                     source_ids=source_ids,
-                    language=language,
+                    language=resolved_lang,
                     extra_instructions=instructions,
                     later=later,
                 )
@@ -668,67 +742,100 @@ async def generate_and_download(
                 gen = await client.artifacts.generate_study_guide(
                     notebook_id,
                     source_ids=source_ids,
-                    language=language,
+                    language=resolved_lang,
                     extra_instructions=instructions,
                     later=later,
                 )
                 ext = ".md"
             elif kind == "data_table":
                 gen = await client.artifacts.generate_data_table(
-                    notebook_id, source_ids=source_ids, language=language, instructions=instructions
+                    notebook_id, source_ids=source_ids, language=resolved_lang, instructions=instructions
                 )
                 ext = ".csv"
             else:
                 raise ValueError(f"Unsupported Studio artifact kind: {kind}")
 
-            if later or gen.is_scheduled:
-                return {
-                    "status": "deferred_later",
-                    "remote_task_id": gen.task_id,
-                    "local_drive_path": None,
-                    "title": f"{prefix}{kind}_{stamp}",
-                }
+            task_id = gen.task_id
+            is_scheduled = bool(later or gen.is_scheduled)
 
-            final_status = await client.artifacts.wait_for_completion(notebook_id, gen.task_id, timeout=600.0)
-            if final_status.is_failed:
-                raise RuntimeError(
-                    f"Generation failed ({final_status.error_code or 'ERROR'}): {final_status.error or 'unknown'}"
-                )
-            if not final_status.is_complete:
-                raise RuntimeError(f"Generation ended in non-complete state: {final_status.status}")
+    if on_started and task_id:
+        maybe = on_started(task_id, language_note)
+        if hasattr(maybe, "__await__"):
+            await maybe
 
-            target = out_dir / f"{prefix}{kind}_{stamp}{ext}"
-            artifact_id = final_status.task_id
+    if is_scheduled:
+        return {
+            "status": "deferred_later",
+            "remote_task_id": task_id,
+            "local_drive_path": None,
+            "title": f"{prefix}{kind}_{stamp}",
+            "note": language_note,
+        }
 
+    # Phase 2 (unlocked): poll long-running cloud generation without starving UI/other calls on this profile.
+    wait_timeout = 2700.0 if kind == "cinematic_video" else (900.0 if kind in ("video", "audio", "slide_deck") else 600.0)
+    try:
+        async with NotebookLMClient.from_storage(profile=profile_name, keepalive=600.0) as poll_client:
+            final_status = await poll_client.artifacts.wait_for_completion(
+                notebook_id,
+                task_id,
+                initial_interval=5.0,
+                max_interval=15.0,
+                timeout=wait_timeout,
+            )
+    except TimeoutError:
+        msg_prefix = f"{language_note}；" if language_note else ""
+        return {
+            "status": "submitted_timeout",
+            "remote_task_id": task_id,
+            "local_drive_path": None,
+            "title": f"{prefix}{kind}_{stamp}",
+            "note": f"{msg_prefix}云端渲染耗时较长仍在后台生成 (task_id={task_id})，稍后请在笔记本子页点「实时同步此本」",
+        }
+
+    if final_status.is_failed:
+        raise RuntimeError(
+            f"Generation failed ({final_status.error_code or 'ERROR'}): {final_status.error or 'unknown'}"
+        )
+    if not final_status.is_complete:
+        raise RuntimeError(f"Generation ended in non-complete state: {final_status.status}")
+
+    target = out_dir / f"{prefix}{kind}_{stamp}{ext}"
+    artifact_id = final_status.task_id or task_id
+
+    # Phase 3 (locked): download the finished Studio artifact to local Drive Hub.
+    async with _get_lock(profile_name):
+        async with NotebookLMClient.from_storage(profile=profile_name, keepalive=600.0) as dl_client:
             if kind == "audio":
-                await client.artifacts.download_audio(notebook_id, str(target), artifact_id=artifact_id)
+                await dl_client.artifacts.download_audio(notebook_id, str(target), artifact_id=artifact_id)
             elif kind in ("video", "cinematic_video"):
-                await client.artifacts.download_video(notebook_id, str(target), artifact_id=artifact_id)
+                await dl_client.artifacts.download_video(notebook_id, str(target), artifact_id=artifact_id)
             elif kind == "slide_deck":
-                await client.artifacts.download_slide_deck(
+                await dl_client.artifacts.download_slide_deck(
                     notebook_id, str(target), artifact_id=artifact_id, output_format="pdf"
                 )
             elif kind == "quiz":
-                await client.artifacts.download_quiz(
+                await dl_client.artifacts.download_quiz(
                     notebook_id, str(target), artifact_id=artifact_id, output_format="markdown"
                 )
             elif kind == "flashcards":
-                await client.artifacts.download_flashcards(
+                await dl_client.artifacts.download_flashcards(
                     notebook_id, str(target), artifact_id=artifact_id, output_format="markdown"
                 )
             elif kind == "infographic":
-                await client.artifacts.download_infographic(notebook_id, str(target), artifact_id=artifact_id)
+                await dl_client.artifacts.download_infographic(notebook_id, str(target), artifact_id=artifact_id)
             elif kind in ("report", "study_guide"):
-                await client.artifacts.download_report(notebook_id, str(target), artifact_id=artifact_id)
+                await dl_client.artifacts.download_report(notebook_id, str(target), artifact_id=artifact_id)
             elif kind == "data_table":
-                await client.artifacts.download_data_table(notebook_id, str(target), artifact_id=artifact_id)
+                await dl_client.artifacts.download_data_table(notebook_id, str(target), artifact_id=artifact_id)
 
-            return {
-                "status": "done",
-                "remote_task_id": artifact_id,
-                "local_drive_path": str(target),
-                "title": target.stem,
-            }
+    return {
+        "status": "done",
+        "remote_task_id": artifact_id,
+        "local_drive_path": str(target),
+        "title": target.stem,
+        "note": language_note,
+    }
 
 
 _KNOWN_APP_HOSTS = frozenset(PERSONAL_APP_HOSTS | ENTERPRISE_APP_HOSTS)

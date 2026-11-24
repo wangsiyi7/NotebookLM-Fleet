@@ -310,7 +310,7 @@ def test_bridge_and_system_routes_e2e(
         r_sys = client.get("/api/system/info")
         assert r_sys.status_code == 200
         sys_data = r_sys.json()
-        assert sys_data["app_version"] == "0.3.1"
+        assert sys_data["app_version"] == "0.4.0"
         assert sys_data["desktop_mode"] is False
 
         r_win_bad = client.post("/api/system/open-window", json={"path": "//evil.example.com"})
@@ -440,7 +440,7 @@ def test_desktop_isolation_cmd_login_and_persistence(
     with TestClient(app) as client:
         r_sys = client.get("/api/system/info")
         assert r_sys.status_code == 200
-        assert r_sys.json()["app_version"] == "0.3.1"
+        assert r_sys.json()["app_version"] == "0.4.0"
         assert "interactive_desktop" in r_sys.json()
 
         r_acct = client.post(
@@ -602,3 +602,263 @@ def test_p1_coupling_fallback_and_strict_generate_payload(
         assert row is not None
         payload = json.loads(row["payload_json"])
         assert payload["strict_account"] is True
+
+
+def test_workspace_rich_preview_raw_and_studio_kind_filter(isolated_env: dict[str, Path]) -> None:
+    from app.db import execute
+
+    ws = isolated_env["ws"]
+    (ws / "guide.md").write_text("# 标题\n\n- 要点 1\n", encoding="utf-8")
+    (ws / "sample.html").write_text("<script>alert(1)</script>", encoding="utf-8")
+    (ws / "pixel.png").write_bytes(b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR")
+    (ws / ".env").write_text("SECRET_KEY=topsecret", encoding="utf-8")
+
+    with TestClient(app) as client:
+        # 1. Markdown preview + raw_url
+        r_md = client.get("/api/workspace/preview?root=workspace&subpath=guide.md")
+        assert r_md.status_code == 200
+        md_json = r_md.json()
+        assert md_json["preview_kind"] == "markdown"
+        assert md_json["raw_url"].startswith("/api/workspace/raw?")
+
+        # 2. preview-path by allowed absolute path
+        r_pp = client.get("/api/workspace/preview-path", params={"path": str(ws / "guide.md")})
+        assert r_pp.status_code == 200
+        assert r_pp.json()["preview_kind"] == "markdown"
+
+        # 3. Safe raw streaming for PNG & Markdown, but strict block on HTML & .env
+        r_png = client.get("/api/workspace/raw?root=workspace&subpath=pixel.png")
+        assert r_png.status_code == 200
+        assert r_png.headers["x-content-type-options"] == "nosniff"
+
+        r_html_raw = client.get("/api/workspace/raw?root=workspace&subpath=sample.html")
+        assert r_html_raw.status_code == 403
+
+        r_env_raw = client.get("/api/workspace/raw?root=workspace&subpath=.env")
+        assert r_env_raw.status_code == 403
+
+        r_env_pp = client.get("/api/workspace/preview-path", params={"path": str(ws / ".env")})
+        assert r_env_pp.status_code == 403
+
+        # 4. GET /api/notebooks?studio_kind=video accurate filtering
+        r_acct = client.post(
+            "/api/accounts",
+            json={"alias": "filter-acct", "email": "filter@gmail.com", "tier": "ultra"},
+        )
+        aid = r_acct.json()["account"]["id"]
+        stats_video = json.dumps({
+            "total": 2,
+            "by_kind": [{"kind": "video", "label": "视频概览", "count": 2, "pct": 100.0}],
+        })
+        stats_report = json.dumps({
+            "total": 1,
+            "by_kind": [{"kind": "report", "label": "简报 / 指南", "count": 1, "pct": 100.0}],
+        })
+        asyncio.run(
+            execute(
+                "INSERT INTO notebooks (account_id, remote_notebook_id, title, artifact_count, studio_stats_json, studio_synced_at) VALUES (?, 'nb-vid', 'Video NB', 2, ?, datetime('now'))",
+                (aid, stats_video),
+            )
+        )
+        asyncio.run(
+            execute(
+                "INSERT INTO notebooks (account_id, remote_notebook_id, title, artifact_count, studio_stats_json, studio_synced_at) VALUES (?, 'nb-rep', 'Report NB', 1, ?, datetime('now'))",
+                (aid, stats_report),
+            )
+        )
+        r_vid = client.get("/api/notebooks?studio_kind=video")
+        assert r_vid.status_code == 200
+        assert r_vid.json()["total"] == 1
+        assert r_vid.json()["notebooks"][0]["title"] == "Video NB"
+
+
+def test_studio_language_normalization_and_cinematic_fallback(
+    isolated_env: dict[str, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from types import SimpleNamespace
+    from notebooklm.exceptions import RPCError
+    from app.adapters import nlm_py_adapter
+    from app.core.scheduler import run_scheduler_tick
+    from app.db import execute, fetch_one, get_settings_map
+
+    # 1. Language normalization & hardcoded English resolution for cinematic_video
+    assert nlm_py_adapter.normalize_studio_language("zh-Hans") == "zh_Hans"
+    assert nlm_py_adapter.normalize_studio_language("zh-CN") == "zh_Hans"
+    assert nlm_py_adapter.normalize_studio_language("zh-TW") == "zh_Hant"
+    assert nlm_py_adapter.normalize_studio_language("en-US") == "en"
+    assert nlm_py_adapter.normalize_studio_language("ja-JP") == "ja"
+    assert nlm_py_adapter.normalize_studio_language(None) == "zh_Hans"
+    cine_lang, cine_note = nlm_py_adapter.resolve_studio_language_for_kind("cinematic_video", "zh-Hans")
+    assert cine_lang == "en" and cine_note is not None and "en" in cine_note
+    assert nlm_py_adapter.resolve_studio_language_for_kind("cinematic_video", "en") == ("en", None)
+    assert nlm_py_adapter.resolve_studio_language_for_kind("audio", "zh-Hans") == ("zh_Hans", None)
+    with pytest.raises(ValueError):
+        nlm_py_adapter.normalize_studio_language("xx-invalid-code")
+
+    # 2. init_db migrates legacy 'zh-Hans' setting to 'zh_Hans'
+    async def _seed_legacy_lang() -> dict[str, str]:
+        await init_db()
+        await execute("UPDATE app_settings SET value = 'zh-Hans' WHERE key = 'default_language'")
+        await init_db()
+        return await get_settings_map()
+
+    migrated = asyncio.run(_seed_legacy_lang())
+    assert migrated["default_language"] == "zh_Hans"
+
+    # 3. cinematic_video directly submits language='en' once (no wasted invalid RPC) + on_started + unlocked polling
+    seen_langs: list[str] = []
+    started_events: list[tuple[str, str | None]] = []
+
+    class _FakeArtifacts:
+        async def generate_cinematic_video(
+            self, _nb: str, *, source_ids: Any = None, language: str = "en", instructions: Any = None
+        ) -> Any:
+            seen_langs.append(language)
+            if language != "en":
+                raise RPCError("The server rejected this request (invalid argument).", rpc_code=3)
+            return SimpleNamespace(task_id="task-cine-1", is_scheduled=False)
+
+        async def wait_for_completion(self, _nb: str, task_id: str, **_kw: Any) -> Any:
+            assert nlm_py_adapter._get_lock("prof-cine").locked() is False
+            return SimpleNamespace(
+                task_id=task_id,
+                status="completed",
+                is_complete=True,
+                is_failed=False,
+                error=None,
+                error_code=None,
+            )
+
+        async def download_video(self, _nb: str, out_path: str, **_kw: Any) -> None:
+            Path(out_path).write_bytes(b"mp4data")
+
+    class _FakeClient:
+        def __init__(self) -> None:
+            self.artifacts = _FakeArtifacts()
+
+        async def __aenter__(self) -> Any:
+            return self
+
+        async def __aexit__(self, *_exc: Any) -> None:
+            return None
+
+    monkeypatch.setattr(
+        nlm_py_adapter.NotebookLMClient,
+        "from_storage",
+        classmethod(lambda cls, **_kw: _FakeClient()),
+    )
+
+    out_dir = isolated_env["hub"] / "03_Exports" / "TestNB"
+    gen_res = asyncio.run(
+        nlm_py_adapter.generate_and_download(
+            "prof-cine",
+            "nb-remote-1",
+            "cinematic_video",
+            out_dir,
+            language="zh-Hans",
+            on_started=lambda tid, note: started_events.append((tid, note)),
+        )
+    )
+    assert seen_langs == ["en"]
+    assert started_events and started_events[0][0] == "task-cine-1"
+    assert gen_res["status"] == "done"
+    assert gen_res["note"] and "en" in gen_res["note"]
+    assert Path(gen_res["local_drive_path"]).exists()
+
+    # 4. Per-kind instructions & hardcoded 'en' on /generate + retry legacy cinematic_video + GET /api/tasks notebook_title
+    with TestClient(app) as client:
+        r_acct = client.post(
+            "/api/accounts",
+            json={"alias": "studio-acct", "email": "studio@gmail.com", "tier": "ultra"},
+        )
+        aid = r_acct.json()["account"]["id"]
+        nb_id = asyncio.run(
+            execute(
+                "INSERT INTO notebooks (account_id, remote_notebook_id, title, role, source_count) VALUES (?, 'nb-rem-st', 'Compiler Notes', 'owner', 3)",
+                (aid,),
+            )
+        )
+
+        # Mixed batch: report stays zh_Hans with general instructions; cinematic_video forces en + cinematic_instructions
+        r_gen_mix = client.post(
+            f"/api/notebooks/{nb_id}/generate",
+            json={
+                "actions": ["report", "cinematic_video"],
+                "language": "zh_Hans",
+                "instructions": "中文简报要求",
+                "cinematic_instructions": "Focus on compiler pipeline visuals",
+            },
+        )
+        assert r_gen_mix.status_code == 200
+        mix_ids = r_gen_mix.json()["task_ids"]
+        assert len(mix_ids) == 2
+        row_rep = asyncio.run(fetch_one("SELECT task_type, payload_json FROM tasks WHERE id = ?", (mix_ids[0],)))
+        row_cine = asyncio.run(fetch_one("SELECT task_type, payload_json FROM tasks WHERE id = ?", (mix_ids[1],)))
+        assert row_rep is not None and row_cine is not None
+        p_rep = json.loads(row_rep["payload_json"])
+        p_cine = json.loads(row_cine["payload_json"])
+        assert p_rep["language"] == "zh_Hans" and p_rep["instructions"] == "中文简报要求"
+        assert p_cine["language"] == "en" and p_cine["instructions"] == "Focus on compiler pipeline visuals"
+        for tid in mix_ids:
+            asyncio.run(execute("UPDATE tasks SET status = 'canceled' WHERE id = ?", (tid,)))
+
+        # Retry legacy failed tasks: audio zh-Hans -> zh_Hans; cinematic_video zh-Hans -> en
+        failed_cine_tid = asyncio.run(
+            execute(
+                "INSERT INTO tasks (notebook_id, task_type, payload_json, preferred_account_id, status, error_msg) VALUES (?, 'cinematic_video', ?, ?, 'failed', 'The server rejected this request (invalid argument).')",
+                (nb_id, json.dumps({"remote_notebook_id": "nb-rem-st", "language": "zh-Hans"}), aid),
+            )
+        )
+        r_cine_retry = client.post(f"/api/tasks/{failed_cine_tid}/retry")
+        assert r_cine_retry.status_code == 200
+        assert json.loads(r_cine_retry.json()["task"]["payload_json"])["language"] == "en"
+        asyncio.run(execute("UPDATE tasks SET status = 'canceled' WHERE id = ?", (failed_cine_tid,)))
+
+        failed_tid = asyncio.run(
+            execute(
+                "INSERT INTO tasks (notebook_id, task_type, payload_json, preferred_account_id, status, error_msg) VALUES (?, 'audio', ?, ?, 'failed', 'The server rejected this request (invalid argument).')",
+                (nb_id, json.dumps({"remote_notebook_id": "nb-rem-st", "language": "zh-Hans"}), aid),
+            )
+        )
+        r_tasks = client.get("/api/tasks")
+        assert r_tasks.status_code == 200
+        hit = next(t for t in r_tasks.json()["tasks"] if t["id"] == failed_tid)
+        assert hit["notebook_title"] == "Compiler Notes"
+
+        r_retry = client.post(f"/api/tasks/{failed_tid}/retry")
+        assert r_retry.status_code == 200
+        assert r_retry.json()["task"]["status"] == "pending"
+        assert json.loads(r_retry.json()["task"]["payload_json"])["language"] == "zh_Hans"
+
+        # Invalid language rejected cleanly with HTTP 400
+        r_bad_lang = client.post(
+            f"/api/notebooks/{nb_id}/generate",
+            json={"actions": ["audio"], "language": "bad_xx_999"},
+        )
+        assert r_bad_lang.status_code == 400
+
+        # Non-blocking scheduler tick wait=True smoke with stub
+        row_ok = asyncio.run(
+            execute("UPDATE accounts SET nlm_auth_status = 'ok' WHERE id = ?", (aid,))
+        )
+        _ = row_ok
+        async def _fake_dl(*_a: Any, **_kw: Any) -> dict[str, Any]:
+            fp = isolated_env["hub"] / "03_Exports" / "Compiler Notes" / "audio_ok.m4a"
+            fp.parent.mkdir(parents=True, exist_ok=True)
+            fp.write_bytes(b"m4a")
+            return {"status": "done", "remote_task_id": "rt-1", "local_drive_path": str(fp), "title": "audio_ok"}
+
+        monkeypatch.setattr(nlm_py_adapter, "generate_and_download", _fake_dl)
+        async def _fake_poll_usage(_prof: str) -> dict[str, Any]:
+            return {"auth_status": "ok", "status": "ready", "five_hour_used_pct": 12.0, "five_hour_remaining_pct": 88.0, "weekly_used_pct": 4.0, "weekly_remaining_pct": 96.0, "actions": []}
+
+        monkeypatch.setattr(nlm_py_adapter, "check_local_auth", lambda _p: {"exists": True, "status": "ok"})
+        monkeypatch.setattr(nlm_py_adapter, "poll_account_usage", _fake_poll_usage)
+
+        disp = asyncio.run(run_scheduler_tick(wait=True))
+        assert disp == 1
+        done_row = asyncio.run(fetch_one("SELECT status, result_artifact_path FROM tasks WHERE id = ?", (failed_tid,)))
+        assert done_row is not None and done_row["status"] == "done"
+        art_row = asyncio.run(fetch_one("SELECT notebook_id FROM artifacts WHERE task_id = ?", (failed_tid,)))
+        assert art_row is not None and art_row["notebook_id"] == nb_id
