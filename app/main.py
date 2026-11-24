@@ -14,16 +14,21 @@ from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
 from .adapters import official_api
+from .adapters.baidupan_adapter import auth_manager as baidu_auth_manager
 from .api.accounts import router as accounts_router
+from .api.cloud_bridge import router as cloud_bridge_router
 from .api.drive import router as drive_router
 from .api.inventory import router as inventory_router
 from .api.official import router as official_router
+from .api.system import router as system_router
 from .api.tasks import router as tasks_router
 from .api.workspace import router as workspace_router
-from .config import PROJECT_ROOT, get_settings
+from .config import get_settings
+from .core.cloud_bridge import cloud_bridge_engine
 from .core.drive_hub import ensure_hub_structure
 from .core.quota_poller import quota_poller_loop
 from .core.scheduler import scheduler_loop
+from .core.win_runtime import get_resource_path
 from .db import (
     execute,
     fetch_all,
@@ -59,6 +64,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
          WHERE status = 'running'
         """
     )
+    await cloud_bridge_engine.recover_interrupted_jobs()
     settings_map = await get_settings_map()
     with contextlib.suppress(OSError):
         ensure_hub_structure(settings_map["drive_hub_root"])
@@ -80,7 +86,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             await asyncio.gather(*bg_tasks, return_exceptions=True)
 
 
-app = FastAPI(title="NotebookLM-Fleet Control Center", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="NotebookLM-Fleet Control Center", version="0.3.0", lifespan=lifespan)
 
 app.include_router(accounts_router)
 app.include_router(inventory_router)
@@ -88,12 +94,14 @@ app.include_router(tasks_router)
 app.include_router(drive_router)
 app.include_router(workspace_router)
 app.include_router(official_router)
+app.include_router(cloud_bridge_router)
+app.include_router(system_router)
 
 
 @app.get("/")
 async def serve_dashboard() -> FileResponse:
     return FileResponse(
-        PROJECT_ROOT / "web" / "index.html",
+        get_resource_path("web/index.html"),
         headers={"Cache-Control": "no-store, no-cache, must-revalidate", "Pragma": "no-cache"},
     )
 
@@ -101,7 +109,7 @@ async def serve_dashboard() -> FileResponse:
 @app.get("/notebooks/{notebook_id}")
 async def serve_notebook_subpage(notebook_id: int) -> FileResponse:
     return FileResponse(
-        PROJECT_ROOT / "web" / "notebook.html",
+        get_resource_path("web/notebook.html"),
         headers={"Cache-Control": "no-store, no-cache, must-revalidate", "Pragma": "no-cache"},
     )
 
@@ -145,6 +153,12 @@ async def get_dashboard() -> dict[str, Any]:
     five_vals = [float(a["five_hour_remaining_pct"]) for a in healthy if a.get("five_hour_remaining_pct") is not None]
     week_vals = [float(a["weekly_remaining_pct"]) for a in healthy if a.get("weekly_remaining_pct") is not None]
 
+    active_bridge_rows = await fetch_all(
+        "SELECT COUNT(*) AS cnt FROM cloud_bridge_jobs WHERE status IN ('queued', 'scanning', 'running')"
+    )
+    bridge_active = int(active_bridge_rows[0]["cnt"] or 0) if active_bridge_rows else 0
+    baidu_state = baidu_auth_manager.status_summary()
+
     return {
         "kpis": {
             "accounts_total": len(accounts),
@@ -161,6 +175,12 @@ async def get_dashboard() -> dict[str, Any]:
             "notebooks_count": notebooks_count,
             "notebooks_scanned": notebooks_scanned,
             "remote_artifacts_total": remote_artifacts_total,
+            "bridge_active_jobs": bridge_active,
+        },
+        "bridge": {
+            "baidu_authenticated": bool(baidu_state.get("authenticated")),
+            "baidu_mode": baidu_state.get("mode"),
+            "active_jobs": bridge_active,
         },
         "official_api": {
             "client_secret_present": official_api.has_client_secret(),

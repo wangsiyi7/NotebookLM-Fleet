@@ -1,12 +1,13 @@
 # NotebookLM-Fleet
 
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](pyproject.toml)
-[![FastAPI](https://img.shields.io/badge/FastAPI-47%20HTTP%20Ops-009688?logo=fastapi&logoColor=white)](app/main.py)
-[![MCP](https://img.shields.io/badge/MCP-Local%2010%20Tools%20%2B%20Official%20Remote-136f63)](app/mcp_server.py)
+[![FastAPI](https://img.shields.io/badge/FastAPI-v0.3.0%20Desktop%20%26%20Web-009688?logo=fastapi&logoColor=white)](app/main.py)
+[![MCP](https://img.shields.io/badge/MCP-Local%2015%20Tools%20%2B%20Official%20Remote-136f63)](app/mcp_server.py)
+[![Windows x64](https://img.shields.io/badge/Windows%20x64-Setup%20EXE%20%26%20Portable-2456a6?logo=windows&logoColor=white)](https://github.com/wangsiyi7/NotebookLM-Fleet/releases/tag/v0.3.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-amber.svg)](LICENSE)
 [![CI](https://github.com/wangsiyi7/NotebookLM-Fleet/actions/workflows/ci.yml/badge.svg)](https://github.com/wangsiyi7/NotebookLM-Fleet/actions/workflows/ci.yml)
 
-> **本地优先的多账号 NotebookLM / Gemini Notebook 智能编排中枢、官方 API v1 + Remote MCP 统一网关，以及跨 AI 编程工具原子化技能套件。**
+> **Windows x64 开箱即用桌面端 + 本地优先的多账号 NotebookLM / Gemini Notebook 智能编排中枢、百度网盘 ⇄ Google 云盘双向互通桥接器、官方 API v1 + Remote MCP 统一网关。**
 
 `NotebookLM-Fleet` 将 **Google 官方 REST API v1 / Remote MCP (Nov 2026 Personal Beta)**、**Web 增强协议 (`notebooklm-py`)** 与 **独立隔离 Chrome / Edge CDP 浏览器通道** 融为一体，解决手点网页时的算力盲区、多号串号、Windows Cookie 数据库锁定以及“AI 编程软件无法联动知识库”等全链路工程痛点。
 
@@ -24,9 +25,17 @@
 - **跨账号耦合与标准化 Drive Hub**
   - 通过 Editor 共享 + Google Drive Hub 镜像双兜底让多号协同生产同一主题，所有产物按 `00_Control` / `01_Inbox` / `02_Topics/<主题>/{Sources,Artifacts}` / `03_Exports` 自动归档。
   - **Studio 内容占比与笔记本全景 (`v0.2.0`)**：同步全库笔记本及真实来源数，自动扫描并统计每个笔记本与全库池的视频 / 音频 / 幻灯片 / 思维导图 / 测验 / 闪卡 / 交互微应用等多模态 **Studio 占比分布**；点击任意笔记本卡片可打开独立子网页 (`/notebooks/{id}`)，内含 SVG 环形分布图、按类筛选下载至 Drive Hub、来源快速追加与可溯源对话。
+- **双向云盘互通（`v0.3.0` · 百度网盘 ⇄ Google 云盘）**
+  - **统一免安装浏览器扫码 / cURL 认证**：独立隔离 Chrome/Edge 扫码窗 + CDP 捕获或粘贴 `Copy as cURL` 导入 `BDUSS`/`STOKEN`，免关日常浏览器；
+  - **百度网盘 ➔ Google 云盘**：递归目录保留、`.bdpart` 断点续传、按文件大小增量跳过，且支持**同步后一键自动入库到指定 NotebookLM 主题**；
+  - **Google 云盘 ➔ 百度网盘**：支持反向勾选 Google 云盘 / `NLM_Hub` / 子页面本地导出成品一键上传备份至百度网盘，底层严格校验允许根路径并屏蔽密钥文件；
+  - **自动探测 Google 云盘盘符**：动态扫描 Windows 逻辑盘符与 DriveFS 注册表挂载点（`我的云端硬盘` / `My Drive`），不再硬编码盘符。
+- **Windows x64 原生桌面应用 (`v0.3.0`)**
+  - 内置 **Edge WebView2 原生窗口 + Windows 系统托盘保活 + 单实例唤醒**，点击笔记本卡片可弹出独立原生子窗口 (`/notebooks/{id}`)；
+  - 集成系统原生文件夹选择器与资源管理器文件定位，提供 Inno Setup 标准安装向导 (`Setup-win64.exe`) 与便携压缩包 (`portable-win64.zip`)。
 - **开箱即用 Web 控制面板 + 跨 IDE 原子技能包**
   - 内置常驻全工作区文件浏览器、预览与资料篮（`http://127.0.0.1:8765`）；
-  - 对上同时提供 **42 路径 / 47 操作 REST API**、**10 工具本机 Stdio MCP** 与 **6 个跨工具原子化 Skills**（适配 **Antigravity / Claude Code / Cursor / Codex / Windsurf**）。
+  - 对上同时提供 **REST API**、**15 工具本机 Stdio MCP**（含 `fleet_bridge_*` 跨云工具）与 **6 个跨工具原子化 Skills**（适配 **Antigravity / Claude Code / Cursor / Codex / Windsurf**）。
 
 ---
 
@@ -84,7 +93,20 @@ flowchart TB
 
 ---
 
-## 3 分钟快速上手
+## Windows x64 桌面安装包下载与运行 (`v0.3.0`)
+
+团队成员无需配置 Python 环境，直接从 [GitHub Releases v0.3.0](https://github.com/wangsiyi7/NotebookLM-Fleet/releases/tag/v0.3.0) 下载即可使用：
+
+1. **标准安装向导（推荐）**：下载 `NotebookLM-Fleet-v0.3.0-Setup-win64.exe`，双击完成安装（支持开始菜单、桌面快捷方式与自动卸载，数据默认持久化至 `%LOCALAPPDATA%\NotebookLM-Fleet\data`）。
+2. **绿色免安装便携版**：下载 `NotebookLM-Fleet-v0.3.0-portable-win64.zip`，解压后双击 `NotebookLM-Fleet.exe` 即可运行（内置 `portable.flag`，所有配置与数据库自动保存在程序同级 `data/` 目录）。
+3. **高级命令行参数（基于编译后的 `NotebookLM-Fleet.exe`）**：
+   - `NotebookLM-Fleet.exe --server-only --port 8765 --no-browser`：纯后台 API/Web 服务模式；
+   - `NotebookLM-Fleet.exe --mcp`：直接以原生 Stdio MCP Server 接入 Claude Desktop / Cursor / Antigravity；
+   - 校验压缩包完整性可使用同页发布的 `SHA256SUMS.txt`。
+
+---
+
+## 3 分钟快速上手（源码开发模式）
 
 ### 环境要求
 - **Python 3.11+** 与 [`uv`](https://docs.astral.sh/uv/)
@@ -168,22 +190,26 @@ cp .env.example .env
 
 ```text
 NotebookLM-Fleet/
+├── desktop_launcher.py               # Windows x64 桌面端入口（PyWebView2 + 系统托盘 + 单实例互斥 + --mcp）
 ├── app/
 │   ├── main.py                       # FastAPI 入口、生命周期恢复、后台轮询与调度双协程
-│   ├── config.py                     # 环境与本地数据目录解析
-│   ├── db.py & schema.sql            # SQLite WAL 异步持久层（7 张核心表）
-│   ├── mcp_server.py                 # 对本地 AI Agent 暴露的 10 工具 Stdio MCP Server
-│   ├── adapters/                     # 三通道适配层（official_api / official_mcp_client / nlm_py_adapter / browser_takeover / router）
-│   ├── api/                          # 模块化路由（accounts / inventory / tasks / drive / workspace / official）
-│   └── core/                         # 核心引擎（quota_poller / scheduler / coupling / drive_hub）
-├── web/index.html                    # 暖纸质风控制台（含常驻全工作区文件浏览器与官方实验室）
+│   ├── config.py                     # 源码与 PyInstaller 冻结态路径统一解析
+│   ├── db.py & schema.sql            # SQLite WAL 异步持久层（9 张核心表 + 幂等迁移）
+│   ├── mcp_server.py                 # 对本地 AI Agent 暴露的 15 工具 Stdio MCP Server（含跨云互通）
+│   ├── adapters/                     # 多通道适配层（official_api / official_mcp_client / nlm_py_adapter / browser_takeover / baidupan_adapter / router）
+│   ├── api/                          # 模块化路由（accounts / inventory / tasks / drive / workspace / official / cloud_bridge / system）
+│   └── core/                         # 核心引擎（win_runtime / quota_poller / scheduler / coupling / drive_hub / cloud_bridge）
+├── web/
+│   ├── index.html                    # 主控台（额度总览 / 笔记本全景 Studio / 百度⇄Google 网盘互通 / 官方实验室）
+│   └── notebook.html                 # 独立笔记本详情子页面（SVG 环形分布图 / 产物下载与回传百度盘 / 来源 / Chat）
+├── build/                            # PyInstaller (.spec) / Inno Setup (.iss) / 自生成应用图标资产
 ├── atomic_skills/                    # 6 大跨 AI 编程工具原子化 Skill 套件
 ├── docs/
 │   ├── OFFICIAL_API_SETUP.md         # 2026-11 Google 官方 API 开通指南
 │   └── sharing_archive_v1/           # 9 章系统白皮书（UTF-8 Markdown / PDF / DOCX + 重导出脚本）
 ├── Notebook_MD_Assets_NotebookLM-Fleet_v1/  # 7 份并行正交知识库 Markdown 资产（脱敏可直入 Notebook）
-├── scripts/                          # Windows (.ps1) / macOS & Linux (.sh) 一键启动与探针脚本
-└── tests/                            # 覆盖核心引擎、三通道路由与协议端点的 pytest 测试套件
+├── scripts/                          # Windows 一键构建打包脚本 (build_windows.ps1) 与服务启动脚本
+└── tests/                            # 覆盖核心引擎、Studio 统计、Windows 运行时与跨云桥接的 pytest 套件
 ```
 
 ---

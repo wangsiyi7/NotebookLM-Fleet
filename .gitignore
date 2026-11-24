@@ -8,8 +8,9 @@ data/
 *.sqlite3
 client_secret*.json
 *storage_state.json
+*baidupan_auth.json
 
-# Python / uv / test caches
+# Python / uv / test caches & Windows build artifacts
 .venv/
 venv/
 __pycache__/
@@ -19,6 +20,9 @@ __pycache__/
 .ruff_cache/
 .coverage
 htmlcov/
+dist/
+build/work/
+*.spec.bak
 
 # OS & editor clutter
 .DS_Store

@@ -932,7 +932,12 @@ def import_cookies_into_profile(
 
 def launch_nlm_login(profile_name: str, *, browser: str = "chrome") -> dict[str, Any]:
     """Launch an interactive browser login window for a single isolated profile."""
-    cmd = [sys.executable, "-m", "notebooklm", "-p", profile_name, "login", "--browser", browser]
+    from ..core.win_runtime import is_frozen
+
+    if is_frozen():
+        cmd = [sys.executable, "--nlm-login", profile_name, browser]
+    else:
+        cmd = [sys.executable, "-m", "notebooklm", "-p", profile_name, "login", "--browser", browser]
     flags = getattr(subprocess, "CREATE_NEW_CONSOLE", 0)
     proc = subprocess.Popen(cmd, creationflags=flags)
     return {

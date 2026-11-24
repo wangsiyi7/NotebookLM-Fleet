@@ -219,7 +219,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
       </div>
       <div class="tablebox">
         <table class="src-table">
-          <thead><tr><th>类型</th><th>本地归档标题</th><th>Drive / 本地路径</th><th>归档时间</th></tr></thead>
+          <thead><tr><th>类型</th><th>本地归档标题</th><th>Drive / 本地路径</th><th>归档时间</th><th>操作</th></tr></thead>
           <tbody id="nbLocalArtsBody"></tbody>
         </table>
       </div>
@@ -440,12 +440,35 @@ function renderLocalTasksAndArchives(){
   </tr>`).join("") : '<tr><td colspan="6" class="hint" style="text-align:center;padding:14px">暂无通过本地调度队列下发的任务</td></tr>';
 
   const arts = (DETAIL && DETAIL.local_artifacts) || [];
-  $("#nbLocalArtsBody").innerHTML = arts.length ? arts.map(a => `<tr>
-    <td class="mono">${esc(a.kind)}</td>
-    <td><b>${esc(a.title)}</b></td>
-    <td class="mono">${esc(a.local_drive_path || "—")}</td>
-    <td class="mono">${esc(a.created_at)}</td>
-  </tr>`).join("") : '<tr><td colspan="4" class="hint" style="text-align:center;padding:14px">暂无本地已下载归档的产物</td></tr>';
+  $("#nbLocalArtsBody").innerHTML = arts.length ? arts.map(a => {
+    const lp = a.local_drive_path || "";
+    const encPath = encodeURIComponent(lp);
+    return `<tr>
+      <td class="mono">${esc(a.kind)}</td>
+      <td><b>${esc(a.title)}</b></td>
+      <td class="mono" style="word-break:break-all">${esc(lp || "—")}</td>
+      <td class="mono">${esc(a.created_at)}</td>
+      <td style="white-space:nowrap">
+        ${lp ? `<button class="btn sm" onclick="revealLocalPath(decodeURIComponent('${encPath}'))">📁 打开位置</button> <button class="btn sm" onclick="backupLocalToBaidu(decodeURIComponent('${encPath}'))">☁️ 存至百度网盘</button>` : '<span class="hint">—</span>'}
+      </td>
+    </tr>`;
+  }).join("") : '<tr><td colspan="5" class="hint" style="text-align:center;padding:14px">暂无本地已下载归档的产物</td></tr>';
+}
+
+async function revealLocalPath(path){
+  try{
+    await api("/api/system/reveal-path", {method:"POST", body:JSON.stringify({path})});
+  }catch(e){ toast(e.message, true); }
+}
+
+async function backupLocalToBaidu(path){
+  try{
+    const r = await api("/api/bridge/jobs/gdrive-to-baidu", {
+      method:"POST",
+      body:JSON.stringify({local_paths:[path], baidu_target_dir:"/NotebookLM_产物备份", preserve_tree:false, skip_existing:true})
+    });
+    toast(`已发起上传至百度网盘 (任务 ${r.job_id})`);
+  }catch(e){ toast("上传百度网盘失败（请先在主控台「网盘互通」登录百度网盘）: " + e.message, true); }
 }
 
 function toggleGenBox(){

@@ -73,6 +73,11 @@ def _local_mcp_status() -> dict[str, Any]:
             "fleet_task_status",
             "fleet_control_task",
             "fleet_open_account_browser",
+            "fleet_bridge_status",
+            "fleet_bridge_list_baidu",
+            "fleet_bridge_sync_to_gdrive",
+            "fleet_bridge_sync_to_baidu",
+            "fleet_bridge_job_status",
         ],
     }
 

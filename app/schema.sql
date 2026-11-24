@@ -132,3 +132,44 @@ CREATE TABLE IF NOT EXISTS app_settings (
     value      TEXT NOT NULL,
     updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
 );
+
+-- 8. Bidirectional Cloud Bridge Jobs (Baidu Netdisk <-> Google Drive)
+CREATE TABLE IF NOT EXISTS cloud_bridge_jobs (
+    job_id                TEXT PRIMARY KEY,
+    direction             TEXT NOT NULL CHECK (direction IN ('baidu_to_gdrive', 'gdrive_to_baidu')),
+    status                TEXT NOT NULL,
+    source_paths_json     TEXT NOT NULL,
+    target_dir            TEXT NOT NULL,
+    preserve_tree         INTEGER NOT NULL DEFAULT 1,
+    skip_existing         INTEGER NOT NULL DEFAULT 1,
+    delete_after_sync     INTEGER NOT NULL DEFAULT 0,
+    auto_ingest_topic_id  INTEGER REFERENCES topics(id) ON DELETE SET NULL,
+    total_files           INTEGER NOT NULL DEFAULT 0,
+    completed_files       INTEGER NOT NULL DEFAULT 0,
+    skipped_files         INTEGER NOT NULL DEFAULT 0,
+    failed_files          INTEGER NOT NULL DEFAULT 0,
+    total_bytes           INTEGER NOT NULL DEFAULT 0,
+    transferred_bytes     INTEGER NOT NULL DEFAULT 0,
+    error_message         TEXT NOT NULL DEFAULT '',
+    created_at            REAL NOT NULL,
+    updated_at            REAL NOT NULL,
+    finished_at           REAL
+);
+
+-- 9. Individual File Transfer Items for Cloud Bridge Jobs
+CREATE TABLE IF NOT EXISTS cloud_bridge_items (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_id            TEXT NOT NULL REFERENCES cloud_bridge_jobs(job_id) ON DELETE CASCADE,
+    source_path       TEXT NOT NULL,
+    target_path       TEXT NOT NULL,
+    fs_id             INTEGER NOT NULL DEFAULT 0,
+    file_size         INTEGER NOT NULL DEFAULT 0,
+    remote_md5        TEXT NOT NULL DEFAULT '',
+    status            TEXT NOT NULL DEFAULT 'pending',
+    transferred_bytes INTEGER NOT NULL DEFAULT 0,
+    error_message     TEXT NOT NULL DEFAULT '',
+    updated_at        REAL NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_bridge_items_job_id
+    ON cloud_bridge_items(job_id);

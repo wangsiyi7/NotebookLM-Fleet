@@ -171,6 +171,15 @@ tbody tr:hover{background:#fbfaf6}
 .nb-meta-row{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
 .nb-pager{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:10px 14px;background:var(--card);border:1px solid var(--line);border-radius:10px;font-size:12.5px}
 .check-inline{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ink);cursor:pointer;padding:4px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+
+/* Bidirectional Cloud Bridge & Windows Desktop Polish */
+.bridge-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px}
+@media (max-width:1100px){.bridge-grid{grid-template-columns:1fr}}
+.bridge-scroll{max-height:360px;overflow:auto}
+.path-row{display:flex;gap:6px;align-items:center}
+.path-row input{flex:1;min-width:0}
+.prog-wrap{height:7px;background:#ece8dc;border-radius:999px;overflow:hidden;min-width:90px}
+.prog-bar{height:100%;background:var(--accent);border-radius:999px;transition:width .25s ease}
 </style>
 </head>
 <body>
@@ -182,6 +191,8 @@ tbody tr:hover{background:#fbfaf6}
     </div>
     <div class="top-actions">
       <button class="btn sm" onclick="toggleSidebar()">📁 切换左侧工作区</button>
+      <span class="pill p-blue" id="sysModeBadge" style="display:none">🪟 Windows x64</span>
+      <button class="btn sm" id="btnRevealDataDir" onclick="revealDataDir()" style="display:none">📂 数据目录</button>
       <span class="save ok" id="connBadge">● 已连接本地服务</span>
       <button class="btn primary" onclick="pollAll()">全部测额</button>
       <button class="btn" onclick="syncAllNotebooks()">同步远程笔记本</button>
@@ -241,6 +252,7 @@ tbody tr:hover{background:#fbfaf6}
     <div class="tabs">
       <button class="tab active" data-panel="panelDash">额度总览</button>
       <button class="tab" data-panel="panelNotebooks">📚 笔记本全景与 Studio <span class="pill p-green" id="tabNbCount" style="margin-left:4px;display:none">0</span></button>
+      <button class="tab" data-panel="panelBridge">☁️ 网盘互通 (百度 ⇄ Google) <span class="pill p-blue" id="tabBridgeCount" style="margin-left:4px;display:none">0</span></button>
       <button class="tab" data-panel="panelLab">官方 API &amp; MCP 实验室</button>
       <button class="tab" data-panel="panelTopics">主题与批量协作</button>
       <button class="tab" data-panel="panelTasks">任务调度队列</button>
@@ -292,6 +304,133 @@ tbody tr:hover{background:#fbfaf6}
         <div style="display:flex;gap:6px">
           <button class="btn sm" id="btnNbPrev" onclick="nbPageStep(-1)">← 上一页</button>
           <button class="btn sm" id="btnNbNext" onclick="nbPageStep(1)">下一页 →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 1.8 Bidirectional Cloud Bridge (Baidu Netdisk <-> Google Drive) -->
+    <section class="panel" id="panelBridge">
+      <div class="two-col">
+        <div class="card-box">
+          <h3>
+            <span>☁️ 百度网盘状态与授权</span>
+            <span class="pill p-gray" id="brBaiduAuthPill">检查中…</span>
+          </h3>
+          <div class="hint" id="brBaiduQuotaText" style="margin-bottom:10px">点击下方按钮启动独立浏览器扫码登录，或粘贴 pan.baidu.com Cookie / cURL</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn primary sm" onclick="openBaiduBrowserLogin('chrome')">🚀 Chrome 扫码登录</button>
+            <button class="btn sm" onclick="openBaiduBrowserLogin('edge')">🌐 Edge 扫码登录</button>
+            <button class="btn sm" onclick="syncBaiduCdp()">⚡ 同步浏览器登录态</button>
+            <button class="btn sm" onclick="openBaiduCookieModal()">📋 粘贴 cURL/Cookie</button>
+            <button class="btn sm" onclick="logoutBaidu()">退出百度账号</button>
+          </div>
+        </div>
+
+        <div class="card-box">
+          <h3>
+            <span>📂 Google 云盘挂载状态与目录</span>
+            <span class="pill p-gray" id="brGdriveStatusPill">检查中…</span>
+          </h3>
+          <div class="hint mono" id="brGdriveRootPath" style="margin-bottom:4px;word-break:break-all">—</div>
+          <div class="hint" id="brGdriveMountHint" style="margin-bottom:10px">支持自动探测本机 Google Drive for Desktop 盘符</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn primary sm" onclick="autoDetectGDrive(true)">🔍 自动探测并应用 Google 云盘</button>
+            <button class="btn sm" onclick="pickBridgeGdriveFolder()">📂 选择目标文件夹</button>
+            <button class="btn sm" onclick="revealGdriveRoot()">📁 资源管理器打开</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-box">
+        <h3>
+          <span>⇄ 双向迁移控制台（同步完成可选自动导入 NotebookLM 主题）</span>
+        </h3>
+        <div class="form-grid">
+          <label>Google 云盘接收子目录（百度 ➔ Google）
+            <input type="text" id="brTargetGdriveSubdir" placeholder="百度网盘同步">
+          </label>
+          <label>百度网盘接收目录（Google ➔ 百度）
+            <input type="text" id="brTargetBaiduDir" placeholder="/NotebookLM_同步">
+          </label>
+          <label>可选：迁移到 Google 云盘后自动入库到 NotebookLM 主题
+            <select id="brAutoTopicSel">
+              <option value="">暂不自动导入（仅网盘同步）</option>
+            </select>
+          </label>
+          <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;padding-bottom:4px">
+            <label class="check-inline"><input type="checkbox" id="brPreserveTree" checked> 保留原目录结构</label>
+            <label class="check-inline"><input type="checkbox" id="brSkipExisting" checked> 增量跳过已存在</label>
+            <label class="check-inline"><input type="checkbox" id="brDeleteAfter"> 迁移后删百度源文件</label>
+          </div>
+        </div>
+        <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn primary" id="btnBaiduToGdrive" onclick="startBaiduToGDrive()">➡️ 将百度勾选迁移至 Google 云盘 (<span id="brBaiduSelCount">0</span>)</button>
+            <button class="btn" id="btnGdriveToBaidu" onclick="startGDriveToBaidu()">⬅️ 将 Google 勾选上传至百度网盘 (<span id="brGdriveSelCount">0</span>)</button>
+          </div>
+          <button class="btn sm" onclick="clearBridgeSelections()">清空双边勾选</button>
+        </div>
+      </div>
+
+      <div class="bridge-grid">
+        <div class="card-box">
+          <h3>
+            <span>📦 百度网盘目录</span>
+            <span style="display:flex;gap:5px;flex-wrap:wrap">
+              <button class="btn sm" onclick="navBaidu('/')">根目录</button>
+              <button class="btn sm" onclick="navBaiduUp()">上一级</button>
+              <button class="btn sm" onclick="mkdirBaidu()">＋ 新建</button>
+              <button class="btn sm" onclick="loadBaiduFiles()">刷新</button>
+            </span>
+          </h3>
+          <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;flex-wrap:wrap">
+            <span class="hint mono" id="brBaiduPathLabel" style="flex:1;min-width:120px">/</span>
+            <input type="search" id="brBaiduSearch" placeholder="搜索百度网盘关键词..." style="padding:5px 8px;border:1px solid var(--line);border-radius:7px;font-size:12.5px">
+            <button class="btn sm" onclick="searchBaiduFiles()">搜索</button>
+          </div>
+          <div class="tablebox bridge-scroll">
+            <table style="min-width:420px">
+              <thead><tr><th style="width:32px">选</th><th>名称</th><th class="num">大小</th></tr></thead>
+              <tbody id="brBaiduBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card-box">
+          <h3>
+            <span>🗂️ Google 云盘资料浏览</span>
+            <span style="display:flex;gap:5px;flex-wrap:wrap">
+              <select id="brGdriveRootSel" onchange="switchGdriveRoot()" style="padding:4px 7px;border:1px solid var(--line);border-radius:7px;font-size:12px">
+                <option value="drive_library">云盘资料库</option>
+                <option value="drive_hub">NLM_Hub 中枢</option>
+              </select>
+              <button class="btn sm" onclick="navGdrive('')">根目录</button>
+              <button class="btn sm" onclick="navGdriveUp()">上一级</button>
+              <button class="btn sm" onclick="loadGdriveBridge()">刷新</button>
+            </span>
+          </h3>
+          <div class="hint mono" id="brGdrivePathLabel" style="margin-bottom:8px">/</div>
+          <div class="tablebox bridge-scroll">
+            <table style="min-width:420px">
+              <thead><tr><th style="width:32px">选</th><th>名称</th><th class="num">大小</th></tr></thead>
+              <tbody id="brGdriveBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-box">
+        <h3>
+          <span>🚀 跨云同步任务队列</span>
+          <button class="btn sm" onclick="loadBridgeJobs()">刷新队列</button>
+        </h3>
+        <div class="tablebox">
+          <table>
+            <thead>
+              <tr><th>任务 ID</th><th>方向</th><th>目标目录</th><th>进度</th><th>文件数(完/跳/败)</th><th>状态</th><th>操作</th></tr>
+            </thead>
+            <tbody id="brJobsBody"></tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -560,7 +699,10 @@ tbody tr:hover{background:#fbfaf6}
       </div>
 
       <div class="card-box">
-        <h3><span>⚙️ 分档调度、工作区路径与防风控策略</span></h3>
+        <h3>
+          <span>⚙️ 分档调度、工作区路径与防风控策略</span>
+          <button class="btn sm" onclick="autoDetectGDrive(true)">🔍 自动探测 Google 云盘</button>
+        </h3>
         <div class="form-grid" id="settingsForm">
           <label>调度策略
             <select id="stTierPolicy">
@@ -581,15 +723,31 @@ tbody tr:hover{background:#fbfaf6}
           <label>同号任务最小延迟 (秒)<input type="number" id="stDelayMin" min="2" max="120"></label>
           <label>同号任务最大延迟 (秒)<input type="number" id="stDelayMax" min="2" max="300"></label>
           <label>默认生成语言<input type="text" id="stLang"></label>
-          <label>整个工作目录路径 (左侧边栏默认根)<input type="text" id="stWorkspaceRoot"></label>
-          <label>Google Drive Hub 路径<input type="text" id="stHubRoot"></label>
+          <label>整个工作目录路径 (左侧边栏默认根)
+            <div class="path-row">
+              <input type="text" id="stWorkspaceRoot">
+              <button class="btn sm" type="button" onclick="pickSettingFolder('stWorkspaceRoot','选择工作区根目录')">📂</button>
+            </div>
+          </label>
+          <label>Google 云盘资料库路径
+            <div class="path-row">
+              <input type="text" id="stLibraryRoot">
+              <button class="btn sm" type="button" onclick="pickSettingFolder('stLibraryRoot','选择 Google 云盘根目录')">📂</button>
+            </div>
+          </label>
+          <label>Google Drive Hub 路径
+            <div class="path-row">
+              <input type="text" id="stHubRoot">
+              <button class="btn sm" type="button" onclick="pickSettingFolder('stHubRoot','选择 NLM_Hub 归档根目录')">📂</button>
+            </div>
+          </label>
           <label>启用官方 API 主通道
             <select id="stOfficialEnabled">
               <option value="false">暂不启用（先用 notebooklm-py 全能通道）</option>
               <option value="true">启用（笔记本与导入优先走官方 v1）</option>
             </select>
           </label>
-          <label class="full">官方 API/MCP 可选代理 (留空走系统/TUN)
+          <label>官方 API/MCP 可选代理 (留空走系统/TUN)
             <input type="text" id="stOfficialProxy" placeholder="例如 http://127.0.0.1:7890">
           </label>
         </div>
@@ -609,10 +767,15 @@ tbody tr:hover{background:#fbfaf6}
 <script>
 let STATE = {
   accounts: [], topics: [], tasks: [], settings: {}, dashboard: null,
-  officialStatus: null, officialTools: [],
+  officialStatus: null, officialTools: [], sys: null,
   libSubpath: "", selectedTopics: new Set(), selectedDriveFiles: new Set(),
   ws: { root: "workspace", subpath: "", q: "", entries: [], currentPath: "" },
   nb: { items: [], total: 0, limit: 36, offset: 0, summary: null },
+  bridge: {
+    status: null, baiduPath: "/", baiduItems: [], selectedBaidu: new Set(),
+    gdriveRoot: "drive_library", gdriveSubpath: "", gdriveItems: [], selectedGdrive: new Set(),
+    jobs: [], timer: null
+  },
   stagedFiles: new Map()
 };
 
@@ -705,6 +868,7 @@ function switchTab(panelId){
   document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.panel === panelId));
   document.querySelectorAll(".panel").forEach(p => p.classList.toggle("show", p.id === panelId));
   if(panelId === "panelNotebooks") loadNotebooks();
+  if(panelId === "panelBridge") loadBridge();
   if(panelId === "panelDrive") loadDrive();
   if(panelId === "panelLab") loadOfficialStatus();
 }
@@ -914,6 +1078,12 @@ function renderDashboard(){
   if(nbBadge){
     if(k.notebooks_count > 0){ nbBadge.style.display = "inline-block"; nbBadge.textContent = k.notebooks_count; }
     else nbBadge.style.display = "none";
+  }
+  const brBadge = $("#tabBridgeCount");
+  if(brBadge){
+    const actBr = Number(k.bridge_active_jobs || 0);
+    if(actBr > 0){ brBadge.style.display = "inline-block"; brBadge.textContent = actBr; }
+    else brBadge.style.display = "none";
   }
   $("#kpiTopics").textContent = `${k.topics_count || 0} / ${k.artifacts_count || 0}`;
   const off = (STATE.dashboard && STATE.dashboard.official_api) || {};
@@ -1236,6 +1406,14 @@ function renderTopics(){
       : '<option value="">请先在「主题与批量协作」新建一个主题</option>';
     if(prev) selDrive.value = prev;
   }
+  const selBrTopic = $("#brAutoTopicSel");
+  if(selBrTopic){
+    const prevBr = selBrTopic.value;
+    selBrTopic.innerHTML = ['<option value="">暂不自动导入（仅网盘同步）</option>'].concat(
+      STATE.topics.map(t => `<option value="${t.id}">同步完成后自动导入主题: ${esc(t.name)}</option>`)
+    ).join("");
+    if(prevBr) selBrTopic.value = prevBr;
+  }
 
   if(!STATE.topics.length){
     tb.innerHTML = '<tr><td colspan="7" class="empty">暂无学习主题 — 点击「＋ 新建学习主题」会自动在 Google Drive 创建对应目录</td></tr>';
@@ -1366,6 +1544,7 @@ function renderLedgerAndSettings(){
   $("#stDelayMax").value = s.task_delay_max_sec || "18";
   $("#stLang").value = s.default_language || "zh-Hans";
   $("#stWorkspaceRoot").value = s.workspace_root || "";
+  if($("#stLibraryRoot")) $("#stLibraryRoot").value = s.drive_library_root || "";
   $("#stHubRoot").value = s.drive_hub_root || "";
   $("#stOfficialEnabled").value = s.official_api_enabled || "false";
   $("#stOfficialProxy").value = s.official_proxy_url || "";
@@ -1702,12 +1881,12 @@ function renderNotebooks(){
         </span>
         <span class="sub mono">${nb.source_count || 0} 源 · ${totalStudio} Studio</span>
       </div>
-      <a class="nb-title-link" href="/notebooks/${nb.id}">${esc(nb.title)}</a>
+      <a class="nb-title-link" href="/notebooks/${nb.id}" onclick="return openNotebookSubpage(${nb.id}, decodeURIComponent('${encodeURIComponent(nb.title || "")}'))">${esc(nb.title)}</a>
       ${studioBlock}
       <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding-top:6px;border-top:1px dashed var(--line);margin-top:auto">
         <span class="sub mono">${esc((nb.remote_notebook_id || "").slice(0, 12))}…</span>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <a class="btn primary sm" href="/notebooks/${nb.id}" style="text-decoration:none">📖 进入子网页</a>
+          <a class="btn primary sm" href="/notebooks/${nb.id}" onclick="return openNotebookSubpage(${nb.id}, decodeURIComponent('${encodeURIComponent(nb.title || "")}'))" style="text-decoration:none">📖 进入子网页</a>
           ${scanned ? `<button class="btn sm" onclick="refreshSingleNbStats(${nb.id}, this)">↻</button>` : ""}
           ${nb.web_url ? `<a class="btn sm" href="${esc(nb.web_url)}" target="_blank" rel="noopener" style="text-decoration:none">↗ 原页</a>` : ""}
         </div>
@@ -1816,6 +1995,7 @@ async function saveStrategySettings(){
       task_delay_max_sec:$("#stDelayMax").value,
       default_language:$("#stLang").value,
       workspace_root:$("#stWorkspaceRoot").value.trim(),
+      drive_library_root:$("#stLibraryRoot") ? $("#stLibraryRoot").value.trim() : "",
       drive_hub_root:$("#stHubRoot").value.trim(),
       official_api_enabled:$("#stOfficialEnabled").value,
       official_proxy_url:$("#stOfficialProxy").value.trim()
@@ -1984,6 +2164,491 @@ async function submitBatch(topicIds){
   }catch(e){ toast(e.message, true); }
 }
 
+/* ================= Windows Desktop Helpers & Bidirectional Cloud Bridge ================= */
+async function loadSystemInfo(){
+  try{
+    const info = await api("/api/system/info");
+    STATE.sys = info;
+    const badge = $("#sysModeBadge");
+    if(badge){
+      badge.style.display = "inline-block";
+      badge.textContent = info.desktop_mode
+        ? `🪟 桌面窗口 v${esc(info.app_version || "0.3.0")}`
+        : `💻 ${esc(info.arch || "x64")} Web v${esc(info.app_version || "0.3.0")}`;
+    }
+    const revBtn = $("#btnRevealDataDir");
+    if(revBtn && info.os === "win32"){
+      revBtn.style.display = "inline-block";
+    }
+  }catch(_){}
+}
+
+async function revealPath(path){
+  try{
+    await api("/api/system/reveal-path", {method:"POST", body:JSON.stringify({path})});
+  }catch(e){ toast(e.message, true); }
+}
+
+function revealDataDir(){
+  if(STATE.sys && STATE.sys.data_dir) revealPath(STATE.sys.data_dir);
+}
+
+function revealGdriveRoot(){
+  const p = ($("#stLibraryRoot") && $("#stLibraryRoot").value.trim()) || STATE.settings.drive_library_root || "";
+  if(p) revealPath(p);
+  else toast("请先配置或探测 Google 云盘路径", true);
+}
+
+async function pickSettingFolder(inputId, title){
+  const el = document.getElementById(inputId);
+  const initDir = el ? el.value.trim() : "";
+  try{
+    const r = await api("/api/system/pick-folder", {method:"POST", body:JSON.stringify({initial_dir:initDir || null, title})});
+    if(!r.canceled && r.path && el){
+      el.value = r.path;
+      toast("已选择目录: " + r.path);
+    }
+  }catch(e){ toast(e.message, true); }
+}
+
+async function autoDetectGDrive(apply=true){
+  try{
+    const r = await api("/api/system/auto-detect-gdrive", {method:"POST", body:JSON.stringify({apply})});
+    if(!r.detected){
+      toast("未检测到本机 Google Drive 挂载盘符（可点击「选择目标文件夹」手动指定）", true);
+      return;
+    }
+    const labels = (r.mounts || []).map(m => m.label + " -> " + m.path).join("；");
+    if(r.applied){
+      await Promise.all([refreshAll(), loadWorkspaceTree()]);
+      if($("#panelBridge") && $("#panelBridge").classList.contains("show")) loadBridge();
+      toast("已自动绑定 Google 云盘: " + labels);
+    }else{
+      toast("探测到 Google 云盘: " + labels);
+    }
+  }catch(e){ toast(e.message, true); }
+}
+
+async function openNotebookSubpage(id, title="笔记本详情"){
+  if(STATE.sys && STATE.sys.desktop_mode){
+    try{
+      const r = await api("/api/system/open-window", {
+        method:"POST",
+        body:JSON.stringify({path:`/notebooks/${id}`, title: `📖 ${title}`, width:1280, height:840})
+      });
+      if(r.opened_native) return false;
+    }catch(_){}
+  }
+  window.location.href = `/notebooks/${id}`;
+  return false;
+}
+
+async function loadBridge(){
+  try{
+    const st = await api("/api/bridge/status?live_check=true");
+    STATE.bridge.status = st;
+    renderBridgeStatus(st);
+    await Promise.all([
+      st.baidu && st.baidu.authenticated ? loadBaiduFiles() : Promise.resolve(renderBaiduNotLoggedIn()),
+      loadGdriveBridge(),
+      loadBridgeJobs()
+    ]);
+  }catch(e){ toast("加载网盘互通面板失败: " + e.message, true); }
+}
+
+function renderBridgeStatus(st){
+  const bd = (st && st.baidu) || {};
+  const gd = (st && st.gdrive) || {};
+  const bdPill = $("#brBaiduAuthPill");
+  if(bdPill){
+    bdPill.className = "pill " + (bd.authenticated ? "p-green" : "p-amber");
+    bdPill.textContent = bd.authenticated ? "已连接" : "未登录";
+  }
+  const bdTxt = $("#brBaiduQuotaText");
+  if(bdTxt){
+    if(bd.authenticated){
+      const uname = (bd.user_info && (bd.user_info.baidu_name || bd.user_info.netdisk_name)) || "百度网盘账号";
+      const q = bd.quota;
+      const qText = q ? ` · 已用 ${q.used_gb} GB / ${q.total_gb} GB (${q.used_percent}%) · 剩余 ${q.free_gb} GB` : "";
+      const warn = bd.warning ? ` · 提示: ${bd.warning}` : "";
+      bdTxt.textContent = `${uname} (${bd.mode || "cookie"})${qText}${warn}`;
+    }else{
+      bdTxt.textContent = "尚未登录百度网盘：推荐点击「Chrome / Edge 扫码登录」，或在弹出窗进入 pan.baidu.com 后点「同步浏览器登录态」";
+    }
+  }
+  const gdPill = $("#brGdriveStatusPill");
+  const mounts = gd.mounts || [];
+  if(gdPill){
+    gdPill.className = "pill " + (mounts.length ? "p-green" : "p-amber");
+    gdPill.textContent = mounts.length ? `已探测 ${mounts.length} 个云盘` : "本地目录兜底";
+  }
+  if($("#brGdriveRootPath")) $("#brGdriveRootPath").textContent = gd.drive_library_root || "未配置";
+  if($("#brGdriveMountHint")){
+    $("#brGdriveMountHint").textContent = mounts.length
+      ? `本机挂载盘符: ${mounts.map(m => m.path).join(" | ")}`
+      : "未检测到 Google Drive 桌面版盘符，当前指向本地目录（仍可正常暂存/互传）";
+  }
+  if($("#brTargetGdriveSubdir") && !$("#brTargetGdriveSubdir").value){
+    $("#brTargetGdriveSubdir").value = gd.default_gdrive_subdir || "百度网盘同步";
+  }
+  if($("#brTargetBaiduDir") && !$("#brTargetBaiduDir").value){
+    $("#brTargetBaiduDir").value = gd.default_upload_dir || "/NotebookLM_同步";
+  }
+}
+
+function renderBaiduNotLoggedIn(){
+  STATE.bridge.baiduItems = [];
+  $("#brBaiduPathLabel").textContent = "/";
+  $("#brBaiduBody").innerHTML = '<tr><td colspan="3" class="empty">请先在上方登录百度网盘后浏览云端文件</td></tr>';
+}
+
+async function openBaiduBrowserLogin(browser="chrome"){
+  try{
+    const r = await api("/api/bridge/auth/open-browser", {method:"POST", body:JSON.stringify({browser})});
+    const label = r.browser === "edge" ? "Edge" : "Chrome";
+    toast(`已打开专属 ${label} (:${r.cdp_port})，请在窗口扫码或登录 pan.baidu.com，完成后点击「同步浏览器登录态」`);
+  }catch(e){ toast(e.message, true); }
+}
+
+async function syncBaiduCdp(){
+  toast("正在从专属浏览器同步百度网盘会话…");
+  try{
+    await api("/api/bridge/auth/sync-cdp", {method:"POST"});
+    toast("百度网盘登录态同步成功");
+    await loadBridge();
+  }catch(e){ toast(e.message, true); }
+}
+
+function openBaiduCookieModal(){
+  showModal(`<h3>📋 导入百度网盘 Cookie / cURL</h3>
+    <div class="hint" style="margin-bottom:8px">
+      在日常浏览器打开 <span class="mono">https://pan.baidu.com/disk/main</span> → 按 <b class="mono">F12</b> → Network → 右键任意 pan.baidu.com 请求选 <b>Copy as cURL (bash)</b> 粘贴下方，或直接粘贴含 <b class="mono">BDUSS=</b> 的 Cookie 字符串：
+    </div>
+    <div class="form-grid">
+      <label class="full">cURL / Cookie 字符串
+        <textarea id="mBaiduCookie" rows="4" class="mono" placeholder="BDUSS=...; STOKEN=... 或完整 curl 命令"></textarea>
+      </label>
+      <label class="full">可选：单独补充 STOKEN（写入/目录操作需要）
+        <input id="mBaiduStoken" class="mono" placeholder="如 cURL 中已包含 STOKEN 可留空">
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn primary" onclick="submitBaiduCookie()">⚡ 解析导入并校验</button>
+    </div>`);
+}
+
+async function submitBaiduCookie(){
+  const raw_input = ($("#mBaiduCookie") && $("#mBaiduCookie").value || "").trim();
+  const stoken = ($("#mBaiduStoken") && $("#mBaiduStoken").value || "").trim();
+  if(!raw_input) return toast("请输入 cURL 或 Cookie 字符串", true);
+  try{
+    await api("/api/bridge/auth/cookie", {method:"POST", body:JSON.stringify({raw_input, stoken})});
+    closeModal();
+    toast("百度网盘凭据导入并验证成功");
+    await loadBridge();
+  }catch(e){ toast(e.message, true); }
+}
+
+async function logoutBaidu(){
+  if(!confirm("确定清空本地保存的百度网盘会话凭据吗？")) return;
+  try{
+    await api("/api/bridge/auth/logout", {method:"POST"});
+    STATE.bridge.selectedBaidu.clear();
+    updateBridgeSelCounts();
+    await loadBridge();
+    toast("已退出百度网盘登录");
+  }catch(e){ toast(e.message, true); }
+}
+
+async function pickBridgeGdriveFolder(){
+  const initDir = STATE.settings.drive_library_root || "";
+  try{
+    const r = await api("/api/system/pick-folder", {method:"POST", body:JSON.stringify({initial_dir:initDir || null, title:"选择 Google 云盘根目录"})});
+    if(r.canceled || !r.path) return;
+    await api("/api/settings", {method:"PUT", body:JSON.stringify({updates:{drive_library_root: r.path}})});
+    await Promise.all([refreshAll(), loadWorkspaceTree(), loadBridge()]);
+    toast("已将 Google 云盘目录切换为: " + r.path);
+  }catch(e){ toast(e.message, true); }
+}
+
+function updateBridgeSelCounts(){
+  if($("#brBaiduSelCount")) $("#brBaiduSelCount").textContent = STATE.bridge.selectedBaidu.size;
+  if($("#brGdriveSelCount")) $("#brGdriveSelCount").textContent = STATE.bridge.selectedGdrive.size;
+}
+
+function clearBridgeSelections(){
+  STATE.bridge.selectedBaidu.clear();
+  STATE.bridge.selectedGdrive.clear();
+  updateBridgeSelCounts();
+  renderBaiduItems();
+  renderGdriveItems();
+}
+
+async function loadBaiduFiles(path=null){
+  if(path !== null) STATE.bridge.baiduPath = path;
+  $("#brBaiduPathLabel").textContent = STATE.bridge.baiduPath || "/";
+  try{
+    const r = await api(`/api/bridge/baidu/files?path=${encodeURIComponent(STATE.bridge.baiduPath || "/")}`);
+    STATE.bridge.baiduItems = r.items || [];
+    renderBaiduItems();
+  }catch(e){
+    $("#brBaiduBody").innerHTML = `<tr><td colspan="3" class="empty">${esc(e.message)}</td></tr>`;
+  }
+}
+
+async function searchBaiduFiles(){
+  const kw = ($("#brBaiduSearch") && $("#brBaiduSearch").value || "").trim();
+  if(!kw) return loadBaiduFiles();
+  try{
+    const r = await api(`/api/bridge/baidu/search?keyword=${encodeURIComponent(kw)}&dir_path=${encodeURIComponent(STATE.bridge.baiduPath || "/")}`);
+    STATE.bridge.baiduItems = r.items || [];
+    renderBaiduItems();
+    toast(`百度网盘搜到 ${STATE.bridge.baiduItems.length} 项`);
+  }catch(e){ toast(e.message, true); }
+}
+
+function navBaidu(p){ loadBaiduFiles(p); }
+function navBaiduUp(){
+  const cur = STATE.bridge.baiduPath || "/";
+  if(cur === "/") return;
+  const parts = cur.split("/").filter(Boolean);
+  parts.pop();
+  loadBaiduFiles("/" + parts.join("/"));
+}
+
+async function mkdirBaidu(){
+  const name = prompt("在当前百度网盘目录下新建文件夹名称:", "");
+  if(!name || !name.trim()) return;
+  const cur = (STATE.bridge.baiduPath || "/").replace(/\/+$/, "");
+  const full = (cur ? cur : "") + "/" + name.trim().replace(/[\\/]+/g, "_");
+  try{
+    await api("/api/bridge/baidu/mkdir", {method:"POST", body:JSON.stringify({path:full})});
+    toast("已创建百度网盘目录: " + full);
+    await loadBaiduFiles();
+  }catch(e){ toast(e.message, true); }
+}
+
+function toggleBaiduSel(path, checked){
+  if(checked) STATE.bridge.selectedBaidu.add(path);
+  else STATE.bridge.selectedBaidu.delete(path);
+  updateBridgeSelCounts();
+}
+
+function renderBaiduItems(){
+  const items = STATE.bridge.baiduItems || [];
+  const tb = $("#brBaiduBody");
+  if(!tb) return;
+  if(!items.length){
+    tb.innerHTML = '<tr><td colspan="3" class="empty">当前目录为空</td></tr>';
+    return;
+  }
+  tb.innerHTML = items.map(it => {
+    const enc = encodeURIComponent(it.path);
+    const chk = STATE.bridge.selectedBaidu.has(it.path) ? "checked" : "";
+    return `<tr>
+      <td><input type="checkbox" ${chk} onchange="toggleBaiduSel(decodeURIComponent('${enc}'), this.checked)"></td>
+      <td style="word-break:break-all">${it.isdir ? `<button class="link" onclick="navBaidu(decodeURIComponent('${enc}'))">📁 ${esc(it.name)}</button>` : "📄 " + esc(it.name)}</td>
+      <td class="num">${it.isdir ? '<span class="hint">文件夹</span>' : fmtBytes(it.size)}</td>
+    </tr>`;
+  }).join("");
+}
+
+function switchGdriveRoot(){
+  STATE.bridge.gdriveRoot = ($("#brGdriveRootSel") && $("#brGdriveRootSel").value) || "drive_library";
+  STATE.bridge.gdriveSubpath = "";
+  loadGdriveBridge();
+}
+function navGdrive(sub){ STATE.bridge.gdriveSubpath = sub; loadGdriveBridge(); }
+function navGdriveUp(){
+  if(!STATE.bridge.gdriveSubpath) return;
+  const parts = STATE.bridge.gdriveSubpath.split(/[\\/]+/).filter(Boolean);
+  parts.pop();
+  STATE.bridge.gdriveSubpath = parts.join("/");
+  loadGdriveBridge();
+}
+function toggleGdriveSel(path, checked){
+  if(checked) STATE.bridge.selectedGdrive.add(path);
+  else STATE.bridge.selectedGdrive.delete(path);
+  updateBridgeSelCounts();
+}
+
+async function loadGdriveBridge(){
+  try{
+    const r = await api(`/api/bridge/gdrive/browse?root=${encodeURIComponent(STATE.bridge.gdriveRoot)}&subpath=${encodeURIComponent(STATE.bridge.gdriveSubpath)}`);
+    STATE.bridge.gdriveItems = r.entries || [];
+    $("#brGdrivePathLabel").textContent = (r.current_path || r.root || "/") + (r.exists ? "" : " (未挂载或不存在)");
+    renderGdriveItems();
+  }catch(e){
+    $("#brGdriveBody").innerHTML = `<tr><td colspan="3" class="empty">${esc(e.message)}</td></tr>`;
+  }
+}
+
+function renderGdriveItems(){
+  const items = STATE.bridge.gdriveItems || [];
+  const tb = $("#brGdriveBody");
+  if(!tb) return;
+  if(!items.length){
+    tb.innerHTML = '<tr><td colspan="3" class="empty">目录为空或尚未挂载</td></tr>';
+    return;
+  }
+  tb.innerHTML = items.map(it => {
+    const encPath = encodeURIComponent(it.path);
+    const encRel = encodeURIComponent(it.relative_path);
+    const chk = STATE.bridge.selectedGdrive.has(it.path) ? "checked" : "";
+    return `<tr>
+      <td><input type="checkbox" ${chk} onchange="toggleGdriveSel(decodeURIComponent('${encPath}'), this.checked)"></td>
+      <td style="word-break:break-all">${it.is_dir ? `<button class="link" onclick="navGdrive(decodeURIComponent('${encRel}'))">📁 ${esc(it.name)}</button>` : "📄 " + esc(it.name)}</td>
+      <td class="num">${it.is_dir ? '<span class="hint">文件夹</span>' : fmtBytes(it.size_bytes)}</td>
+    </tr>`;
+  }).join("");
+}
+
+async function startBaiduToGDrive(){
+  const source_paths = Array.from(STATE.bridge.selectedBaidu);
+  if(!source_paths.length) return toast("请先在左侧百度网盘勾选至少 1 个文件或文件夹", true);
+  const gdrive_subdir = ($("#brTargetGdriveSubdir") && $("#brTargetGdriveSubdir").value || "").trim();
+  const autoTopicRaw = $("#brAutoTopicSel") ? $("#brAutoTopicSel").value : "";
+  try{
+    const r = await api("/api/bridge/jobs/baidu-to-gdrive", {
+      method:"POST",
+      body:JSON.stringify({
+        source_paths,
+        gdrive_subdir,
+        preserve_tree: Boolean($("#brPreserveTree") && $("#brPreserveTree").checked),
+        skip_existing: Boolean($("#brSkipExisting") && $("#brSkipExisting").checked),
+        delete_after_sync: Boolean($("#brDeleteAfter") && $("#brDeleteAfter").checked),
+        auto_ingest_topic_id: autoTopicRaw ? Number(autoTopicRaw) : null
+      })
+    });
+    toast(`已启动迁移任务 ${r.job_id}（百度 ➔ Google）`);
+    STATE.bridge.selectedBaidu.clear();
+    updateBridgeSelCounts();
+    renderBaiduItems();
+    await loadBridgeJobs();
+  }catch(e){ toast(e.message, true); }
+}
+
+async function startGDriveToBaidu(){
+  const local_paths = Array.from(STATE.bridge.selectedGdrive);
+  if(!local_paths.length) return toast("请先在右侧 Google 云盘勾选至少 1 个文件或文件夹", true);
+  const baidu_target_dir = ($("#brTargetBaiduDir") && $("#brTargetBaiduDir").value || "/NotebookLM_同步").trim();
+  try{
+    const r = await api("/api/bridge/jobs/gdrive-to-baidu", {
+      method:"POST",
+      body:JSON.stringify({
+        local_paths,
+        baidu_target_dir,
+        preserve_tree: Boolean($("#brPreserveTree") && $("#brPreserveTree").checked),
+        skip_existing: Boolean($("#brSkipExisting") && $("#brSkipExisting").checked)
+      })
+    });
+    toast(`已启动反向上传任务 ${r.job_id}（Google ➔ 百度）`);
+    STATE.bridge.selectedGdrive.clear();
+    updateBridgeSelCounts();
+    renderGdriveItems();
+    await loadBridgeJobs();
+  }catch(e){ toast(e.message, true); }
+}
+
+function bridgeStatusPill(st){
+  const map = {
+    queued:["排队中","p-blue"], scanning:["扫描中","p-blue"], running:["传输中","p-green"],
+    completed:["已完成","p-green"], partial_failed:["部分失败","p-amber"],
+    failed:["失败","p-red"], cancelled:["已取消","p-gray"], interrupted:["重启中断","p-amber"]
+  };
+  const [lbl, cls] = map[st] || [st || "未知", "p-gray"];
+  return `<span class="pill ${cls}">${esc(lbl)}</span>`;
+}
+
+async function loadBridgeJobs(){
+  try{
+    const r = await api("/api/bridge/jobs?limit=30");
+    STATE.bridge.jobs = r.jobs || [];
+    renderBridgeJobs();
+    const hasActive = STATE.bridge.jobs.some(j => ["queued","scanning","running"].includes(j.status));
+    if(hasActive && !STATE.bridge.timer){
+      STATE.bridge.timer = setInterval(loadBridgeJobs, 2200);
+    }else if(!hasActive && STATE.bridge.timer){
+      clearInterval(STATE.bridge.timer);
+      STATE.bridge.timer = null;
+      if($("#panelBridge") && $("#panelBridge").classList.contains("show")){
+        loadGdriveBridge();
+      }
+      refreshAll();
+    }
+  }catch(_){}
+}
+
+function renderBridgeJobs(){
+  const tb = $("#brJobsBody");
+  if(!tb) return;
+  const jobs = STATE.bridge.jobs || [];
+  if(!jobs.length){
+    tb.innerHTML = '<tr><td colspan="7" class="empty">暂无跨云同步任务记录</td></tr>';
+    return;
+  }
+  tb.innerHTML = jobs.map(j => {
+    const dirBadge = j.direction === "gdrive_to_baidu"
+      ? '<span class="pill p-blue">Google ➔ 百度</span>'
+      : '<span class="pill p-green">百度 ➔ Google</span>';
+    const pct = Number(j.progress_percent || 0).toFixed(1);
+    const encTarget = encodeURIComponent(j.target_dir || "");
+    const active = ["queued","scanning","running"].includes(j.status);
+    const canRetry = ["failed","partial_failed","cancelled","interrupted"].includes(j.status);
+    return `<tr>
+      <td class="mono">${esc(j.job_id)}</td>
+      <td>${dirBadge}</td>
+      <td class="mono" style="max-width:240px;word-break:break-all">${esc(j.target_dir)}</td>
+      <td>
+        <div class="prog-wrap"><div class="prog-bar" style="width:${Math.min(100, pct)}%"></div></div>
+        <div class="sub mono">${pct}% · ${fmtBytes(j.transferred_bytes)} / ${fmtBytes(j.total_bytes)}</div>
+      </td>
+      <td class="mono">${j.completed_files}/${j.skipped_files}/${j.failed_files} (共 ${j.total_files})</td>
+      <td>${bridgeStatusPill(j.status)}</td>
+      <td class="ops">
+        <button class="link" onclick="openBridgeJobModal('${esc(j.job_id)}')">详情</button>
+        ${active ? `<button class="link danger" onclick="cancelBridgeJob('${esc(j.job_id)}')">取消</button>` : ""}
+        ${canRetry ? `<button class="link" onclick="retryBridgeJob('${esc(j.job_id)}')">重试</button>` : ""}
+        ${j.direction === "baidu_to_gdrive" ? `<button class="link" onclick="revealPath(decodeURIComponent('${encTarget}'))">打开目录</button>` : ""}
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+async function openBridgeJobModal(jobId){
+  try{
+    const j = await api(`/api/bridge/jobs/${encodeURIComponent(jobId)}`);
+    const items = j.items || [];
+    const rows = items.map(it => `<tr>
+      <td class="mono" style="max-width:240px;word-break:break-all">${esc(it.source_path)}</td>
+      <td class="mono" style="max-width:240px;word-break:break-all">${esc(it.target_path)}</td>
+      <td class="num mono">${fmtBytes(it.file_size)}</td>
+      <td>${bridgeStatusPill(it.status)}</td>
+      <td style="color:var(--red);font-size:11.5px">${esc(it.error_message || "")}</td>
+    </tr>`).join("");
+    showModal(`<h3>🔎 同步任务明细 · ${esc(j.job_id)}</h3>
+      <div class="hint mono" style="margin-bottom:8px">目标: ${esc(j.target_dir)} · ${bridgeStatusPill(j.status)} ${j.error_message ? " · " + esc(j.error_message) : ""}</div>
+      <div class="tablebox" style="max-height:380px">
+        <table style="min-width:560px">
+          <thead><tr><th>源路径</th><th>目标路径</th><th class="num">大小</th><th>状态</th><th>错误</th></tr></thead>
+          <tbody>${rows || '<tr><td colspan="5" class="empty">暂无文件明细</td></tr>'}</tbody>
+        </table>
+      </div>
+      <div class="modal-actions"><button class="btn" onclick="closeModal()">关闭</button></div>`);
+  }catch(e){ toast(e.message, true); }
+}
+
+async function cancelBridgeJob(jobId){
+  try{ await api(`/api/bridge/jobs/${encodeURIComponent(jobId)}/cancel`, {method:"POST"}); toast("已取消任务 " + jobId); await loadBridgeJobs(); }
+  catch(e){ toast(e.message, true); }
+}
+
+async function retryBridgeJob(jobId){
+  try{ const r = await api(`/api/bridge/jobs/${encodeURIComponent(jobId)}/retry`, {method:"POST"}); toast("已创建重试任务 " + r.job_id); await loadBridgeJobs(); }
+  catch(e){ toast(e.message, true); }
+}
+
 document.querySelectorAll(".tab").forEach(btn => {
   btn.addEventListener("click", () => switchTab(btn.dataset.panel));
 });
@@ -1991,6 +2656,7 @@ document.querySelectorAll(".tab").forEach(btn => {
 fillMcpToolTemplate();
 const _initTab = new URLSearchParams(window.location.search).get("tab");
 if(_initTab && document.querySelector(`.tab[data-panel="${_initTab}"]`)) switchTab(_initTab);
+loadSystemInfo();
 refreshAll();
 loadWorkspaceTree();
 setInterval(refreshAll, 25000);

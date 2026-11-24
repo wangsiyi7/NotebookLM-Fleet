@@ -374,18 +374,33 @@ async def import_browser_cookies(account_id: int) -> dict[str, Any]:
             "detail": quota.get("error_msg"),
         }
 
-    cmd = [
-        sys.executable,
-        "-m",
-        "notebooklm",
-        "-p",
-        acct["nlm_profile"],
-        "login",
-        "--browser-cookies",
-        "chrome",
-        "--account",
-        acct["email"],
-    ]
+    from ..core.win_runtime import is_frozen
+
+    if is_frozen():
+        cmd = [
+            sys.executable,
+            "--nlm-cli",
+            "-p",
+            acct["nlm_profile"],
+            "login",
+            "--browser-cookies",
+            "chrome",
+            "--account",
+            acct["email"],
+        ]
+    else:
+        cmd = [
+            sys.executable,
+            "-m",
+            "notebooklm",
+            "-p",
+            acct["nlm_profile"],
+            "login",
+            "--browser-cookies",
+            "chrome",
+            "--account",
+            acct["email"],
+        ]
     proc = await asyncio.to_thread(
         subprocess.run,
         cmd,

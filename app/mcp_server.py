@@ -20,8 +20,9 @@ logger = logging.getLogger(__name__)
 
 from fastmcp import FastMCP  # noqa: E402
 
-from .adapters import browser_takeover, nlm_py_adapter, official_api  # noqa: E402
+from .adapters import baidupan_adapter, browser_takeover, nlm_py_adapter, official_api  # noqa: E402
 from .config import get_chrome_profile_dir, get_settings  # noqa: E402
+from .core.cloud_bridge import cloud_bridge_engine  # noqa: E402
 from .core.drive_hub import ensure_hub_structure, ensure_topic_folders  # noqa: E402
 from .core.quota_poller import poll_all_accounts, poll_one_account  # noqa: E402
 from .db import (  # noqa: E402
@@ -401,6 +402,81 @@ async def fleet_open_account_browser(
             "web_redirect_url": f"http://{cfg.host}:{cfg.port}/api/accounts/{acct['id']}/oauth-redirect",
         }
     raise ValueError("mode 必须是 nlm_login, chrome 或 official_oauth")
+
+
+@mcp.tool()
+async def fleet_bridge_status() -> dict[str, Any]:
+    """Return Baidu Netdisk session/quota status and detected Windows Google Drive mount paths."""
+    await _ensure_ready()
+    summary = baidupan_adapter.auth_manager.status_summary()
+    quota = None
+    if summary.get("authenticated"):
+        try:
+            summary["user_info"] = await baidupan_adapter.baidu_client.get_user_info()
+            quota = await baidupan_adapter.baidu_client.get_quota()
+        except Exception as exc:  # noqa: BLE001
+            summary["warning"] = str(exc)
+    settings = await get_settings_map()
+    return {
+        "baidu": {**summary, "quota": quota},
+        "drive_library_root": settings.get("drive_library_root", ""),
+        "drive_hub_root": settings.get("drive_hub_root", ""),
+    }
+
+
+@mcp.tool()
+async def fleet_bridge_list_baidu(path: str = "/", limit: int = 100) -> dict[str, Any]:
+    """Browse files and folders inside Baidu Netdisk at the given path."""
+    await _ensure_ready()
+    items = await baidupan_adapter.baidu_client.list_files(path, limit=limit)
+    return {"path": path, "items": [it.to_dict() for it in items]}
+
+
+@mcp.tool()
+async def fleet_bridge_sync_to_gdrive(
+    source_paths: list[str],
+    gdrive_subdir: str = "",
+    preserve_tree: bool = True,
+    skip_existing: bool = True,
+    auto_ingest_topic_id: int | None = None,
+) -> dict[str, Any]:
+    """Create a Baidu Netdisk -> Google Drive migration job (optionally enqueueing ingest into a NotebookLM topic)."""
+    await _ensure_ready()
+    return await cloud_bridge_engine.create_baidu_to_gdrive_job(
+        source_paths=source_paths,
+        gdrive_subdir=gdrive_subdir or None,
+        preserve_tree=preserve_tree,
+        skip_existing=skip_existing,
+        auto_ingest_topic_id=auto_ingest_topic_id,
+        wait=False,
+    )
+
+
+@mcp.tool()
+async def fleet_bridge_sync_to_baidu(
+    local_paths: list[str],
+    baidu_target_dir: str = "/NotebookLM_同步",
+    preserve_tree: bool = True,
+    skip_existing: bool = True,
+) -> dict[str, Any]:
+    """Create a Google Drive / Workspace -> Baidu Netdisk upload sync job."""
+    await _ensure_ready()
+    return await cloud_bridge_engine.create_gdrive_to_baidu_job(
+        local_paths=local_paths,
+        baidu_target_dir=baidu_target_dir,
+        preserve_tree=preserve_tree,
+        skip_existing=skip_existing,
+        wait=False,
+    )
+
+
+@mcp.tool()
+async def fleet_bridge_job_status(job_id: str | None = None, limit: int = 20) -> dict[str, Any]:
+    """Check status of a specific cloud bridge job (with items) or list recent bridge jobs."""
+    await _ensure_ready()
+    if job_id:
+        return await cloud_bridge_engine.get_job(job_id, include_items=True)
+    return {"jobs": await cloud_bridge_engine.list_jobs(limit=limit)}
 
 
 if __name__ == "__main__":

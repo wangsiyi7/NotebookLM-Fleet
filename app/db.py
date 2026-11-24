@@ -11,8 +11,9 @@ from typing import Any
 import aiosqlite
 
 from .config import Settings, get_chrome_profile_dir, get_db_path, get_settings
+from .core.win_runtime import get_resource_path
 
-SCHEMA_PATH = Path(__file__).resolve().parent / "schema.sql"
+SCHEMA_PATH = get_resource_path("app/schema.sql")
 
 TIER_LIMITS: dict[str, tuple[int, int]] = {
     "free": (100, 50),
@@ -40,6 +41,8 @@ def default_settings_map(settings: Settings | None = None) -> dict[str, str]:
         "official_proxy_url": "",
         "official_mcp_last_probe_json": "",
         "default_language": "zh-Hans",
+        "baidupan_default_gdrive_subdir": "百度网盘同步",
+        "baidupan_default_upload_dir": "/NotebookLM_同步",
         "supabase_enabled": "false",
         "supabase_url": "",
         "last_backup_at": "",

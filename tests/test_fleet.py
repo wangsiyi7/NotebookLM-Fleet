@@ -247,9 +247,10 @@ def test_mcp_server_clean_stdio_and_tools() -> None:
     lines = [ln for ln in proc.stdout.strip().splitlines() if ln]
     assert len(lines) == 1, f"Unexpected stdout lines: {proc.stdout!r}"
     tool_names = json.loads(lines[0])
-    assert len(tool_names) == 10
+    assert len(tool_names) == 15
     assert "fleet_quota_overview" in tool_names
     assert "fleet_enqueue_batch" in tool_names
+    assert "fleet_bridge_status" in tool_names
 
 
 def test_official_only_scheduling_router_file_and_crash_recovery(

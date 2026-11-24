@@ -40,6 +40,9 @@ SENSITIVE_FILENAMES = frozenset(
         "client_secret.json",
         "storage_state.json",
         "master_token.json",
+        "baidupan_auth.json",
+        "auth.json",
+        "runtime_port.json",
     }
 )
 
