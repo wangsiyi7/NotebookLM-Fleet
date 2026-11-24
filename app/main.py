@@ -98,6 +98,14 @@ async def serve_dashboard() -> FileResponse:
     )
 
 
+@app.get("/notebooks/{notebook_id}")
+async def serve_notebook_subpage(notebook_id: int) -> FileResponse:
+    return FileResponse(
+        PROJECT_ROOT / "web" / "notebook.html",
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate", "Pragma": "no-cache"},
+    )
+
+
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon() -> JSONResponse:
     from fastapi.responses import Response
@@ -119,8 +127,19 @@ async def get_dashboard() -> dict[str, Any]:
 
     topics_cnt_row = await fetch_all("SELECT COUNT(*) AS cnt FROM topics")
     artifacts_cnt_row = await fetch_all("SELECT COUNT(*) AS cnt FROM artifacts")
+    nb_stats_rows = await fetch_all(
+        """
+        SELECT COUNT(*) AS total,
+               SUM(CASE WHEN studio_synced_at IS NOT NULL THEN 1 ELSE 0 END) AS scanned,
+               COALESCE(SUM(artifact_count), 0) AS remote_arts
+          FROM notebooks
+        """
+    )
     topics_count = int(topics_cnt_row[0]["cnt"]) if topics_cnt_row else 0
     artifacts_count = int(artifacts_cnt_row[0]["cnt"]) if artifacts_cnt_row else 0
+    notebooks_count = int(nb_stats_rows[0]["total"] or 0) if nb_stats_rows else 0
+    notebooks_scanned = int(nb_stats_rows[0]["scanned"] or 0) if nb_stats_rows else 0
+    remote_artifacts_total = int(nb_stats_rows[0]["remote_arts"] or 0) if nb_stats_rows else 0
 
     healthy = [a for a in accounts if a.get("enabled") and a.get("nlm_auth_status") == "ok"]
     five_vals = [float(a["five_hour_remaining_pct"]) for a in healthy if a.get("five_hour_remaining_pct") is not None]
@@ -139,6 +158,9 @@ async def get_dashboard() -> dict[str, Any]:
             "failed_tasks": status_counts.get("failed", 0),
             "topics_count": topics_count,
             "artifacts_count": artifacts_count,
+            "notebooks_count": notebooks_count,
+            "notebooks_scanned": notebooks_scanned,
+            "remote_artifacts_total": remote_artifacts_total,
         },
         "official_api": {
             "client_secret_present": official_api.has_client_secret(),

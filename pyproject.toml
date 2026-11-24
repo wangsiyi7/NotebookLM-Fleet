@@ -1,7 +1,7 @@
 [project]
 name = "notebooklm-fleet"
-version = "0.1.0"
-description = "Multi-account Gemini Notebook / NotebookLM quota monitor, Google Drive hub, and task orchestrator"
+version = "0.2.0"
+description = "Multi-account Gemini Notebook / NotebookLM quota monitor, Studio analytics, Google Drive hub, and task orchestrator"
 requires-python = ">=3.11"
 dependencies = [
     "aiosqlite>=0.20.0",

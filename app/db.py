@@ -70,6 +70,20 @@ async def init_db(db_path: Path | None = None, settings: Settings | None = None)
     async with get_db(target) as conn:
         await conn.executescript(schema_sql)
 
+        # Idempotent schema migration for existing SQLite databases created prior to v0.2.0.
+        col_cur = await conn.execute("PRAGMA table_info(notebooks)")
+        existing_cols = {row["name"] for row in await col_cur.fetchall()}
+        migrations = {
+            "role": "ALTER TABLE notebooks ADD COLUMN role TEXT NOT NULL DEFAULT 'owner'",
+            "studio_stats_json": "ALTER TABLE notebooks ADD COLUMN studio_stats_json TEXT NOT NULL DEFAULT '{}'",
+            "remote_artifacts_json": "ALTER TABLE notebooks ADD COLUMN remote_artifacts_json TEXT NOT NULL DEFAULT '[]'",
+            "remote_sources_json": "ALTER TABLE notebooks ADD COLUMN remote_sources_json TEXT NOT NULL DEFAULT '[]'",
+            "studio_synced_at": "ALTER TABLE notebooks ADD COLUMN studio_synced_at TEXT",
+        }
+        for col_name, ddl in migrations.items():
+            if col_name not in existing_cols:
+                await conn.execute(ddl)
+
         for key, val in default_settings_map(cfg).items():
             await conn.execute(
                 "INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)",

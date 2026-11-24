@@ -54,6 +54,21 @@ _DRIVE_MIME_ALIASES: dict[str, str] = {
     "pdf": DriveMimeType.PDF.value,
 }
 
+STUDIO_KIND_META: dict[str, dict[str, str]] = {
+    "video": {"label": "视频概览", "icon": "🎬", "color": "#136f63"},
+    "audio": {"label": "音频播客", "icon": "🎙️", "color": "#c47d2b"},
+    "slide_deck": {"label": "幻灯片", "icon": "📊", "color": "#26547c"},
+    "infographic": {"label": "信息图", "icon": "🖼️", "color": "#7b4b94"},
+    "mind_map": {"label": "思维导图", "icon": "🧠", "color": "#2b8a57"},
+    "report": {"label": "简报 / 指南", "icon": "📄", "color": "#b43c32"},
+    "quiz": {"label": "测验题库", "icon": "📝", "color": "#556b2f"},
+    "flashcards": {"label": "学习闪卡", "icon": "🗂️", "color": "#a8577e"},
+    "data_table": {"label": "对比数据表", "icon": "📈", "color": "#1e6f8f"},
+    "file": {"label": "交互微应用 / 文件", "icon": "🌐", "color": "#5b5ea6"},
+    "fantasy_map": {"label": "奇幻地图", "icon": "🗺️", "color": "#8f5f2c"},
+    "unknown": {"label": "其他 Studio", "icon": "✨", "color": "#6b716b"},
+}
+
 # Key locks by (loop_id, profile_name) so tests across event loops never collide.
 _profile_locks: dict[tuple[int, str], asyncio.Lock] = {}
 
@@ -208,15 +223,237 @@ async def list_sources(profile_name: str, notebook_id: str) -> list[dict[str, An
     async with _get_lock(profile_name):
         async with NotebookLMClient.from_storage(profile=profile_name, keepalive=600.0) as client:
             sources = await client.sources.list(notebook_id)
-            return [
-                {
-                    "id": src.id,
-                    "title": getattr(src, "title", ""),
-                    "kind": str(getattr(src, "kind", "")),
-                    "status": str(getattr(src, "status", "")),
-                }
-                for src in sources
-            ]
+            return [_serialize_source(src) for src in sources]
+
+
+def _enum_str(val: Any, default: str = "") -> str:
+    if val is None:
+        return default
+    raw = getattr(val, "value", getattr(val, "name", val))
+    s = str(raw).strip()
+    if "." in s and s.upper() != s.lower():
+        s = s.split(".")[-1]
+    return s.lower() if s else default
+
+
+def _dt_iso(val: Any) -> str | None:
+    if val is None:
+        return None
+    if hasattr(val, "isoformat"):
+        return str(val.isoformat())
+    return str(val)
+
+
+def _serialize_source(src: Any) -> dict[str, Any]:
+    kind_raw = _enum_str(getattr(src, "kind", None), "unknown")
+    status_raw = _enum_str(getattr(src, "status", None), "ready")
+    return {
+        "id": str(getattr(src, "id", "")),
+        "title": str(getattr(src, "title", None) or "(未命名来源)"),
+        "kind": kind_raw,
+        "status": status_raw,
+        "url": getattr(src, "url", None) or getattr(src, "viewer_url", None),
+        "word_count": int(getattr(src, "word_count", 0) or 0) or None,
+        "content_mime": getattr(src, "content_mime", None),
+        "created_at": _dt_iso(getattr(src, "created_at", None)),
+    }
+
+
+def _serialize_artifact(art: Any) -> dict[str, Any]:
+    kind = _enum_str(getattr(art, "kind", None), "unknown")
+    if kind not in STUDIO_KIND_META:
+        kind = "unknown"
+    meta = STUDIO_KIND_META[kind]
+    status_str = str(
+        getattr(art, "status_str", None) or _enum_str(getattr(art, "status", None), "unknown")
+    ).lower()
+    slides = getattr(art, "slides", None) or ()
+    infographics = getattr(art, "infographics", None) or ()
+    source_ids = getattr(art, "source_ids", None) or ()
+    dur = getattr(art, "duration_seconds", None)
+    return {
+        "id": str(getattr(art, "id", "")),
+        "title": str(getattr(art, "title", None) or meta["label"]),
+        "kind": kind,
+        "label": meta["label"],
+        "icon": meta["icon"],
+        "color": meta["color"],
+        "status": status_str,
+        "created_at": _dt_iso(getattr(art, "created_at", None)),
+        "url": getattr(art, "url", None),
+        "duration_seconds": round(float(dur), 1) if dur is not None else None,
+        "report_kind": getattr(art, "report_kind", None),
+        "source_ids_count": len(source_ids),
+        "slides_count": len(slides),
+        "infographics_count": len(infographics),
+        "downloadable": kind in DOWNLOADABLE_STUDIO_KINDS and status_str == "completed",
+    }
+
+
+def _serialize_note(note: Any) -> dict[str, Any]:
+    return {
+        "id": str(getattr(note, "id", "")),
+        "title": str(getattr(note, "title", None) or "(未命名笔记)"),
+        "content": str(getattr(note, "content", "") or ""),
+        "created_at": _dt_iso(getattr(note, "created_at", None)),
+    }
+
+
+DOWNLOADABLE_STUDIO_KINDS: dict[str, tuple[str, str]] = {
+    "audio": ("download_audio", ".m4a"),
+    "video": ("download_video", ".mp4"),
+    "slide_deck": ("download_slide_deck", ".pdf"),
+    "quiz": ("download_quiz", ".md"),
+    "flashcards": ("download_flashcards", ".md"),
+    "infographic": ("download_infographic", ".png"),
+    "report": ("download_report", ".md"),
+    "data_table": ("download_data_table", ".csv"),
+    "mind_map": ("download_mind_map", ".json"),
+}
+
+
+def compute_studio_breakdown(
+    artifacts: list[dict[str, Any]],
+    *,
+    notes_count: int = 0,
+    synced_at: str | None = None,
+) -> dict[str, Any]:
+    """Compute exact per-kind Studio counts and percentages sorted descending by count."""
+    total = len(artifacts)
+    counts: dict[str, int] = {}
+    completed = 0
+    in_progress = 0
+    failed = 0
+    for item in artifacts:
+        kind = str(item.get("kind") or "unknown").lower()
+        if kind not in STUDIO_KIND_META:
+            kind = "unknown"
+        counts[kind] = counts.get(kind, 0) + 1
+        st = str(item.get("status") or "").lower()
+        if st in ("completed", "done", "ready"):
+            completed += 1
+        elif st in ("in_progress", "processing", "pending", "generating"):
+            in_progress += 1
+        elif st in ("failed", "error"):
+            failed += 1
+
+    by_kind: list[dict[str, Any]] = []
+    for kind, cnt in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])):
+        meta = STUDIO_KIND_META.get(kind, STUDIO_KIND_META["unknown"])
+        pct = round((cnt / total) * 100.0, 1) if total > 0 else 0.0
+        by_kind.append(
+            {
+                "kind": kind,
+                "label": meta["label"],
+                "icon": meta["icon"],
+                "color": meta["color"],
+                "count": cnt,
+                "pct": pct,
+            }
+        )
+
+    return {
+        "total": total,
+        "completed": completed,
+        "in_progress": in_progress,
+        "failed": failed,
+        "notes_count": int(notes_count or 0),
+        "by_kind": by_kind,
+        "synced_at": synced_at or datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+
+
+async def list_notebook_studio_detail(profile_name: str, notebook_id: str) -> dict[str, Any]:
+    """Fetch sources, Studio artifacts, notes, and computed proportion breakdown for one notebook."""
+    async with _get_lock(profile_name):
+        async with NotebookLMClient.from_storage(profile=profile_name, keepalive=600.0) as client:
+            sources_raw = await client.sources.list(notebook_id)
+            arts_raw = await client.artifacts.list(notebook_id)
+            notes_raw: list[Any] = []
+            if hasattr(client, "notes") and hasattr(client.notes, "list"):
+                try:
+                    notes_raw = await client.notes.list(notebook_id)
+                except Exception:  # noqa: BLE001
+                    notes_raw = []
+            sources = [_serialize_source(s) for s in sources_raw]
+            artifacts = [_serialize_artifact(a) for a in arts_raw]
+            notes = [_serialize_note(n) for n in notes_raw]
+            stats = compute_studio_breakdown(artifacts, notes_count=len(notes))
+            return {
+                "sources": sources,
+                "artifacts": artifacts,
+                "notes": notes,
+                "studio_stats": stats,
+            }
+
+
+async def batch_scan_studio_stats(
+    profile_name: str,
+    notebook_ids: list[str],
+    *,
+    concurrency: int = 4,
+) -> dict[str, dict[str, Any]]:
+    """Scan Studio artifact breakdowns for a batch of notebook IDs using one shared client session."""
+    if not notebook_ids:
+        return {}
+    sem = asyncio.Semaphore(max(1, min(concurrency, 8)))
+    results: dict[str, dict[str, Any]] = {}
+
+    async with _get_lock(profile_name):
+        async with NotebookLMClient.from_storage(profile=profile_name, keepalive=600.0) as client:
+
+            async def _one(nb_id: str) -> None:
+                async with sem:
+                    try:
+                        arts_raw = await client.artifacts.list(nb_id)
+                        arts = [_serialize_artifact(a) for a in arts_raw]
+                        results[nb_id] = {
+                            "artifacts": arts,
+                            "studio_stats": compute_studio_breakdown(arts),
+                        }
+                    except Exception as exc:  # noqa: BLE001
+                        logger.debug("Skipping Studio scan for %s (%s): %s", nb_id, profile_name, exc)
+
+            await asyncio.gather(*(_one(nid) for nid in notebook_ids))
+    return results
+
+
+async def download_remote_artifact(
+    profile_name: str,
+    notebook_id: str,
+    artifact_id: str,
+    kind: str,
+    output_dir: str | Path,
+    *,
+    title: str = "",
+) -> dict[str, Any]:
+    """Download an existing remote Studio artifact by artifact_id and kind to output_dir."""
+    spec = DOWNLOADABLE_STUDIO_KINDS.get(kind)
+    if spec is None:
+        raise ValueError(f"暂不支持自动下载类型为 {kind!r} 的 Studio 产物（交互微应用/网页类型请在 notebook.google.com 打开）。")
+    method_name, ext = spec
+    out_dir = Path(output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]+', "_", (title or kind).strip()).strip(". ")[:60] or kind
+    stamp = _safe_stamp()
+    target = out_dir / f"{safe_title}_{stamp}{ext}"
+
+    async with _get_lock(profile_name):
+        async with NotebookLMClient.from_storage(profile=profile_name, keepalive=600.0) as client:
+            fn = getattr(client.artifacts, method_name)
+            kwargs: dict[str, Any] = {"artifact_id": artifact_id}
+            if kind == "slide_deck":
+                kwargs["output_format"] = "pdf"
+            elif kind in ("quiz", "flashcards"):
+                kwargs["output_format"] = "markdown"
+            await fn(notebook_id, str(target), **kwargs)
+    return {
+        "saved": True,
+        "kind": kind,
+        "artifact_id": artifact_id,
+        "local_drive_path": str(target),
+        "title": target.stem,
+    }
 
 
 async def add_url(

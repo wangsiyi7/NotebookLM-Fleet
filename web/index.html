@@ -154,6 +154,23 @@ tbody tr:hover{background:#fbfaf6}
 .check-item{display:flex !important;flex-direction:row !important;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;font-size:12.5px !important;color:var(--ink) !important;cursor:pointer;background:#faf8f2}
 .guide-list{padding-left:18px;display:flex;flex-direction:column;gap:7px;font-size:12.5px}
 .guide-list a{color:var(--blue);text-decoration:underline;word-break:break-all}
+
+/* Notebooks Panorama & Studio Proportion Analytics */
+.studio-hero{background:linear-gradient(135deg,#ffffff 0%,#f7fbf9 100%);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.studio-stack{display:flex;height:14px;width:100%;border-radius:999px;overflow:hidden;background:#ece8dc;gap:1px}
+.studio-stack.sm{height:9px;margin:2px 0}
+.studio-seg{height:100%;transition:width .25s ease}
+.studio-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:9px}
+.st-leg-item{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ink)}
+.st-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0}
+.nb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+.nb-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 15px;display:flex;flex-direction:column;gap:9px;transition:border-color .18s,box-shadow .18s}
+.nb-card:hover{border-color:var(--accent);box-shadow:0 6px 20px rgba(19,111,99,.08)}
+.nb-title-link{font-weight:700;font-size:14.5px;color:var(--ink);text-decoration:none;display:block;line-height:1.4;word-break:break-word}
+.nb-title-link:hover{color:var(--accent);text-decoration:underline}
+.nb-meta-row{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
+.nb-pager{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:10px 14px;background:var(--card);border:1px solid var(--line);border-radius:10px;font-size:12.5px}
+.check-inline{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ink);cursor:pointer;padding:4px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card)}
 </style>
 </head>
 <body>
@@ -217,11 +234,13 @@ tbody tr:hover{background:#fbfaf6}
       <div class="stat"><div class="label">平均周额度剩余</div><div class="num" id="kpiWeek">—</div><div class="hint">滚动周上限余量</div></div>
       <div class="stat"><div class="label">健康账号 / 总数</div><div class="num" id="kpiAccts">0 / 0</div><div class="hint" id="kpiOauthHint">官方 API 待配置</div></div>
       <div class="stat"><div class="label">队列 / 运行中</div><div class="num" id="kpiTasks">0 / 0</div><div class="hint" id="kpiDoneHint">已完成 0 · 延时 0</div></div>
+      <div class="stat"><div class="label">远程笔记本 / Studio</div><div class="num" id="kpiNotebooks">0 / 0</div><div class="hint" id="kpiNbHint">点击同步可统计全池占比</div></div>
       <div class="stat"><div class="label">主题 / 云盘产物</div><div class="num" id="kpiTopics">0 / 0</div><div class="hint">已归档至 NLM_Hub</div></div>
     </div>
 
     <div class="tabs">
       <button class="tab active" data-panel="panelDash">额度总览</button>
+      <button class="tab" data-panel="panelNotebooks">📚 笔记本全景与 Studio <span class="pill p-green" id="tabNbCount" style="margin-left:4px;display:none">0</span></button>
       <button class="tab" data-panel="panelLab">官方 API &amp; MCP 实验室</button>
       <button class="tab" data-panel="panelTopics">主题与批量协作</button>
       <button class="tab" data-panel="panelTasks">任务调度队列</button>
@@ -235,6 +254,46 @@ tbody tr:hover{background:#fbfaf6}
         <span class="hint">每个账号独立隔离 Chrome 与 notebooklm-py 会话；登录一次自动保活。也可直接点击「官方 API 授权」启用 Google 官方个人测试通道。</span>
       </div>
       <div class="acct-grid" id="acctCards"></div>
+    </section>
+
+    <!-- 1.5 Notebook Panorama & Studio Proportion Analytics -->
+    <section class="panel" id="panelNotebooks">
+      <div class="studio-hero" id="nbGlobalStudioBox">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <div>
+            <b style="font-size:14.5px">📊 全库 Studio 内容构成与占比分析</b>
+            <span class="hint" id="nbGlobalScanHint" style="margin-left:8px">同步或点击扫描后，自动按视频 / 音频 / 幻灯片 / 思维导图 / 测验等精确统计占比</span>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn primary sm" id="btnNbSyncNow" onclick="syncAllNotebooks()">🔄 同步全部笔记本</button>
+            <button class="btn sm" id="btnScanMoreStudio" onclick="batchScanStudio(30)">📊 批量统计 Studio 占比 (+30本)</button>
+          </div>
+        </div>
+        <div class="studio-stack" id="nbGlobalStack"></div>
+        <div class="studio-legend" id="nbGlobalLegend"><span class="hint">尚无已统计的 Studio 数据，点击右上角「批量统计 Studio 占比」即可开始采集。</span></div>
+      </div>
+
+      <div class="toolbar">
+        <input type="search" id="nbSearchInput" placeholder="搜索笔记本标题或 ID..." style="min-width:220px" oninput="onNbFilterChange()">
+        <select id="nbAcctFilter" onchange="onNbFilterChange()"><option value="">全部账号</option></select>
+        <select id="nbSortSelect" onchange="onNbFilterChange()">
+          <option value="recent">排序：已统计 / 最近同步优先</option>
+          <option value="artifacts">排序：Studio 产物数最多</option>
+          <option value="sources">排序：来源文档数最多</option>
+          <option value="title">排序：标题 A-Z</option>
+        </select>
+        <label class="check-inline"><input type="checkbox" id="nbOnlyStudio" onchange="onNbFilterChange()"> 仅看含 Studio 产物</label>
+        <label class="check-inline"><input type="checkbox" id="nbOnlyOwner" onchange="onNbFilterChange()"> 仅看我创建的</label>
+      </div>
+
+      <div class="nb-grid" id="notebooksGrid"></div>
+      <div class="nb-pager" id="nbPager" style="display:none">
+        <span id="nbPagerInfo">第 1 页</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn sm" id="btnNbPrev" onclick="nbPageStep(-1)">← 上一页</button>
+          <button class="btn sm" id="btnNbNext" onclick="nbPageStep(1)">下一页 →</button>
+        </div>
+      </div>
     </section>
 
     <!-- 2. Official API & MCP Lab -->
@@ -553,6 +612,7 @@ let STATE = {
   officialStatus: null, officialTools: [],
   libSubpath: "", selectedTopics: new Set(), selectedDriveFiles: new Set(),
   ws: { root: "workspace", subpath: "", q: "", entries: [], currentPath: "" },
+  nb: { items: [], total: 0, limit: 36, offset: 0, summary: null },
   stagedFiles: new Map()
 };
 
@@ -644,6 +704,7 @@ function toggleSidebar(){
 function switchTab(panelId){
   document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.panel === panelId));
   document.querySelectorAll(".panel").forEach(p => p.classList.toggle("show", p.id === panelId));
+  if(panelId === "panelNotebooks") loadNotebooks();
   if(panelId === "panelDrive") loadDrive();
   if(panelId === "panelLab") loadOfficialStatus();
 }
@@ -843,6 +904,17 @@ function renderDashboard(){
   $("#kpiAccts").textContent = `${k.accounts_healthy || 0} / ${k.accounts_total || 0}`;
   $("#kpiTasks").textContent = `${k.pending_tasks || 0} / ${k.running_tasks || 0}`;
   $("#kpiDoneHint").textContent = `已完成 ${k.done_tasks || 0} · 延时 ${k.deferred_tasks || 0}`;
+  if($("#kpiNotebooks")){
+    $("#kpiNotebooks").textContent = `${k.notebooks_count || 0} / ${k.remote_artifacts_total || 0}`;
+    $("#kpiNbHint").textContent = k.notebooks_count
+      ? `已统计 ${k.notebooks_scanned || 0} / ${k.notebooks_count} 本 Studio 占比`
+      : "点击右上角同步拉取全池笔记本";
+  }
+  const nbBadge = $("#tabNbCount");
+  if(nbBadge){
+    if(k.notebooks_count > 0){ nbBadge.style.display = "inline-block"; nbBadge.textContent = k.notebooks_count; }
+    else nbBadge.style.display = "none";
+  }
   $("#kpiTopics").textContent = `${k.topics_count || 0} / ${k.artifacts_count || 0}`;
   const off = (STATE.dashboard && STATE.dashboard.official_api) || {};
   $("#kpiOauthHint").textContent = off.enabled && off.project_id ? `官方 API 已启用 (${off.project_id})` : "官方 API 待配置 (Ch2/Lab 可用)";
@@ -921,6 +993,14 @@ function syncLabSelectors(){
   const pidInput = $("#labProjectId");
   if(pidInput && !pidInput.value && STATE.settings.official_api_project_id){
     pidInput.value = STATE.settings.official_api_project_id;
+  }
+  const nbSel = $("#nbAcctFilter");
+  if(nbSel){
+    const prevNb = nbSel.value;
+    nbSel.innerHTML = ['<option value="">全部账号</option>'].concat(
+      STATE.accounts.map(a => `<option value="${a.id}">${esc(a.alias)} (${esc(a.email)})</option>`)
+    ).join("");
+    if(prevNb) nbSel.value = prevNb;
   }
 }
 
@@ -1165,12 +1245,13 @@ function renderTopics(){
   tb.innerHTML = STATE.topics.map(t => {
     const chk = STATE.selectedTopics.has(t.id) ? "checked" : "";
     const sharedTxt = (t.shared_emails || []).length ? esc(t.shared_emails.join(", ")) : '<span class="hint">未共享</span>';
+    const nbLinks = (t.notebooks || []).map(nb => `<a class="pill p-green" href="/notebooks/${nb.id}" style="text-decoration:none;margin-right:4px">📖 ${esc(nb.account_alias)}: ${nb.artifact_count || 0} Studio</a>`).join("");
     return `<tr>
       <td><input type="checkbox" ${chk} onchange="toggleTopic(${t.id}, this.checked)"></td>
-      <td><b>${esc(t.name)}</b><div class="sub mono">${esc(t.drive_folder_path)}</div></td>
+      <td><b>${esc(t.name)}</b><div class="sub mono">${esc(t.drive_folder_path)}</div>${nbLinks ? `<div style="margin-top:4px">${nbLinks}</div>` : ""}</td>
       <td>${esc(t.master_alias || "自动")}</td>
       <td><span class="pill p-blue">${esc(t.coupling_mode)}</span></td>
-      <td class="num">${t.source_count || 0} 源 / ${t.artifact_count || 0} 产物</td>
+      <td class="num">${t.source_count || 0} 源 / ${t.remote_artifact_count || t.artifact_count || 0} 产物</td>
       <td style="max-width:200px;word-break:break-all;font-size:12px">${sharedTxt}</td>
       <td class="ops">
         <button class="link" onclick="openIngestModal(${t.id})">导入链接/文本</button>
@@ -1527,10 +1608,153 @@ async function openChrome(id){
     toast(msg);
   }catch(e){ toast(e.message, true); }
 }
+/* ================= Notebook Panorama & Studio Proportions ================= */
+function onNbFilterChange(){
+  clearTimeout(window._nbFilterT);
+  window._nbFilterT = setTimeout(() => {
+    STATE.nb.offset = 0;
+    loadNotebooks();
+  }, 180);
+}
+function nbPageStep(dir){
+  const next = Math.max(0, STATE.nb.offset + dir * STATE.nb.limit);
+  if(next >= STATE.nb.total) return;
+  STATE.nb.offset = next;
+  loadNotebooks();
+}
+function renderStudioBarHtml(byKind, small=false){
+  if(!byKind || !byKind.length) return "";
+  return `<div class="studio-stack ${small ? "sm" : ""}">${byKind.map(x => `<div class="studio-seg" title="${esc(x.label)}: ${x.count} 项 (${x.pct}%)" style="width:${Math.max(1.5, x.pct)}%;background:${esc(x.color)}"></div>`).join("")}</div>`;
+}
+async function loadNotebooks(){
+  const grid = $("#notebooksGrid");
+  if(!grid) return;
+  const q = ($("#nbSearchInput") && $("#nbSearchInput").value || "").trim();
+  const accountId = ($("#nbAcctFilter") && $("#nbAcctFilter").value || "").trim();
+  const sort = ($("#nbSortSelect") && $("#nbSortSelect").value) || "recent";
+  const onlyStudio = Boolean($("#nbOnlyStudio") && $("#nbOnlyStudio").checked);
+  const onlyOwner = Boolean($("#nbOnlyOwner") && $("#nbOnlyOwner").checked);
+  const qs = new URLSearchParams({
+    q, sort, limit: String(STATE.nb.limit), offset: String(STATE.nb.offset),
+    only_with_studio: String(onlyStudio), only_owner: String(onlyOwner)
+  });
+  if(accountId) qs.set("account_id", accountId);
+  try{
+    const d = await api("/api/notebooks?" + qs.toString());
+    STATE.nb.items = d.notebooks || [];
+    STATE.nb.total = d.total || 0;
+    STATE.nb.summary = d.global_studio_summary || null;
+    renderNotebooks();
+  }catch(e){
+    grid.innerHTML = `<div class="card-box empty">加载笔记本列表失败: ${esc(e.message)}</div>`;
+  }
+}
+function renderNotebooks(){
+  const gs = STATE.nb.summary || {};
+  const byKind = gs.by_kind || [];
+  $("#nbGlobalScanHint").textContent = gs.total_notebooks
+    ? `已统计 ${gs.scanned_notebooks || 0} / ${gs.total_notebooks} 个笔记本 · 累计发现 ${gs.total_artifacts || 0} 项 Studio 产物`
+    : "尚未同步笔记本";
+  $("#nbGlobalStack").innerHTML = byKind.length
+    ? byKind.map(x => `<div class="studio-seg" title="${esc(x.label)}: ${x.count} (${x.pct}%)" style="width:${Math.max(1.2, x.pct)}%;background:${esc(x.color)}"></div>`).join("")
+    : "";
+  $("#nbGlobalLegend").innerHTML = byKind.length
+    ? byKind.map(x => `<span class="st-leg-item"><span class="st-dot" style="background:${esc(x.color)}"></span>${esc(x.icon)} <b>${esc(x.label)}</b> ${x.pct}% (${x.count})</span>`).join("")
+    : '<span class="hint">尚无已统计的 Studio 数据，点击右上角「批量统计 Studio 占比」即可采集。</span>';
+
+  const grid = $("#notebooksGrid");
+  if(!STATE.nb.items.length){
+    grid.innerHTML = `<div class="card-box empty" style="grid-column:1/-1">暂无匹配的笔记本。可先点击右上角或上方「🔄 同步全部笔记本」拉取全库笔记本与来源数量。</div>`;
+    $("#nbPager").style.display = "none";
+    return;
+  }
+
+  grid.innerHTML = STATE.nb.items.map(nb => {
+    const st = nb.studio_stats || {};
+    const kinds = st.by_kind || [];
+    const scanned = Boolean(nb.studio_scanned);
+    const totalStudio = Number(st.total || nb.artifact_count || 0);
+    let studioBlock = "";
+    if(!scanned){
+      studioBlock = `<div class="hint" style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 8px;background:#faf8f3;border-radius:8px;border:1px dashed var(--line)">
+        <span>尚未统计 Studio 占比</span>
+        <button class="btn sm" onclick="refreshSingleNbStats(${nb.id}, this)">🔍 立即统计占比</button>
+      </div>`;
+    }else if(totalStudio === 0){
+      studioBlock = `<div class="hint" style="padding:5px 8px;background:#faf8f3;border-radius:8px">已扫描 Studio：暂无产物（进入子页可一键生成）</div>`;
+    }else{
+      studioBlock = `<div>
+        ${renderStudioBarHtml(kinds, true)}
+        <div class="chips" style="margin-top:6px">
+          ${kinds.map(k => `<span class="chip" title="${esc(k.label)}"><span class="st-dot" style="background:${esc(k.color)};width:7px;height:7px;vertical-align:middle;margin-right:3px"></span>${esc(k.icon)} ${esc(k.label)} <b>${k.pct}%</b> (${k.count})</span>`).join("")}
+        </div>
+      </div>`;
+    }
+    const rolePill = nb.is_master
+      ? '<span class="pill p-green">自有</span>'
+      : `<span class="pill p-blue">${esc(nb.role || "共享")}</span>`;
+    return `<div class="nb-card">
+      <div class="nb-meta-row">
+        <span style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
+          <span class="pill p-gray">${esc(nb.account_alias)}</span>
+          ${rolePill}
+          ${nb.topic_name ? `<span class="pill p-amber">${esc(nb.topic_name)}</span>` : ""}
+        </span>
+        <span class="sub mono">${nb.source_count || 0} 源 · ${totalStudio} Studio</span>
+      </div>
+      <a class="nb-title-link" href="/notebooks/${nb.id}">${esc(nb.title)}</a>
+      ${studioBlock}
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding-top:6px;border-top:1px dashed var(--line);margin-top:auto">
+        <span class="sub mono">${esc((nb.remote_notebook_id || "").slice(0, 12))}…</span>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <a class="btn primary sm" href="/notebooks/${nb.id}" style="text-decoration:none">📖 进入子网页</a>
+          ${scanned ? `<button class="btn sm" onclick="refreshSingleNbStats(${nb.id}, this)">↻</button>` : ""}
+          ${nb.web_url ? `<a class="btn sm" href="${esc(nb.web_url)}" target="_blank" rel="noopener" style="text-decoration:none">↗ 原页</a>` : ""}
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+
+  const totalPages = Math.max(1, Math.ceil(STATE.nb.total / STATE.nb.limit));
+  const curPage = Math.floor(STATE.nb.offset / STATE.nb.limit) + 1;
+  $("#nbPager").style.display = STATE.nb.total > STATE.nb.limit ? "flex" : "none";
+  $("#nbPagerInfo").textContent = `共 ${STATE.nb.total} 个笔记本 · 第 ${curPage} / ${totalPages} 页`;
+  $("#btnNbPrev").disabled = STATE.nb.offset <= 0;
+  $("#btnNbNext").disabled = (STATE.nb.offset + STATE.nb.limit) >= STATE.nb.total;
+}
+async function refreshSingleNbStats(id, btn=null){
+  if(btn){ btn.disabled = true; btn.textContent = "统计中…"; }
+  try{
+    await api(`/api/notebooks/${id}/refresh`, {method:"POST"});
+    await Promise.all([refreshAll(), loadNotebooks()]);
+    toast("已完成该笔记本 Studio 占比统计");
+  }catch(e){ toast(e.message, true); }
+  finally{ if(btn){ btn.disabled = false; } }
+}
+async function batchScanStudio(limit=30){
+  const btn = $("#btnScanMoreStudio");
+  if(btn){ btn.disabled = true; btn.textContent = "正在扫描…"; }
+  try{
+    const acctId = ($("#nbAcctFilter") && $("#nbAcctFilter").value) ? Number($("#nbAcctFilter").value) : null;
+    const r = await api("/api/notebooks/scan-studio", {
+      method:"POST",
+      body: JSON.stringify({account_id: acctId, limit, only_unscanned: true})
+    });
+    await Promise.all([refreshAll(), loadNotebooks()]);
+    toast(`已统计 ${r.scanned} 个笔记本 Studio 占比（剩余未扫描 ${r.remaining_unscanned} 个）`);
+  }catch(e){ toast(e.message, true); }
+  finally{ if(btn){ btn.disabled = false; btn.textContent = "📊 批量统计 Studio 占比 (+30本)"; } }
+}
+
 async function syncAllNotebooks(){
-  toast("正在跨账号同步远程笔记本…");
-  try{ const r = await api("/api/notebooks/sync-all", {method:"POST"}); await refreshAll(); toast(`同步完成: ${r.synced_notebooks} 个笔记本`); }
-  catch(e){ toast(e.message, true); }
+  toast("正在同步全池笔记本及首批 Studio 构成占比…");
+  try{
+    const r = await api("/api/notebooks/sync-all?scan_studio_limit=12", {method:"POST"});
+    await Promise.all([refreshAll(), loadNotebooks()]);
+    switchTab("panelNotebooks");
+    const errNote = (r.errors && r.errors.length) ? `（部分异常: ${r.errors.length}）` : "";
+    toast(`同步完成：共 ${r.total_in_db || r.synced_notebooks} 个笔记本，已统计 ${r.studio_scanned || 0} 本 Studio 占比${errNote}`);
+  }catch(e){ toast(e.message, true); }
 }
 async function shareTopicAll(topicId){
   try{ const r = await api(`/api/topics/${topicId}/share-all`, {method:"POST"}); await refreshAll(); toast(`已共享给 ${r.shared.length} 个账号`); }
@@ -1765,6 +1989,8 @@ document.querySelectorAll(".tab").forEach(btn => {
 });
 
 fillMcpToolTemplate();
+const _initTab = new URLSearchParams(window.location.search).get("tab");
+if(_initTab && document.querySelector(`.tab[data-panel="${_initTab}"]`)) switchTab(_initTab);
 refreshAll();
 loadWorkspaceTree();
 setInterval(refreshAll, 25000);

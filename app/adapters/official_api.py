@@ -425,41 +425,48 @@ async def list_notebooks(
     filter_expr: str | None = None,
     page_size: int = 50,
     page_token: str | None = None,
+    fetch_all: bool = False,
     transport: httpx.AsyncBaseTransport | None = None,
     access_token: str | None = None,
     proxy: str | None = None,
 ) -> list[dict[str, Any]]:
-    params: dict[str, Any] = {"pageSize": min(max(1, page_size), 100)}
-    if filter_expr:
-        params["filter"] = filter_expr
-    if page_token:
-        params["pageToken"] = page_token
+    result: list[dict[str, Any]] = []
+    cur_token = page_token
+    max_pages = 10 if fetch_all else 1
+    for _ in range(max_pages):
+        params: dict[str, Any] = {"pageSize": min(max(1, page_size), 100)}
+        if filter_expr:
+            params["filter"] = filter_expr
+        if cur_token:
+            params["pageToken"] = cur_token
 
-    data = await _request(
-        alias,
-        project_id,
-        "GET",
-        "notebooks",
-        params=params,
-        transport=transport,
-        access_token=access_token,
-        proxy=proxy,
-    )
-    items = data.get("notebooks") or []
-    result = []
-    for nb in items:
-        name = nb.get("name", "")
-        nb_id = name.split("/")[-1] if "/" in name else name
-        result.append(
-            {
-                "id": nb_id,
-                "resource_name": name,
-                "title": nb.get("displayName") or nb.get("display_name") or nb_id,
-                "create_time": nb.get("createTime"),
-                "is_owner": True,
-                "role": "owner",
-            }
+        data = await _request(
+            alias,
+            project_id,
+            "GET",
+            "notebooks",
+            params=params,
+            transport=transport,
+            access_token=access_token,
+            proxy=proxy,
         )
+        items = data.get("notebooks") or []
+        for nb in items:
+            name = nb.get("name", "")
+            nb_id = name.split("/")[-1] if "/" in name else name
+            result.append(
+                {
+                    "id": nb_id,
+                    "resource_name": name,
+                    "title": nb.get("displayName") or nb.get("display_name") or nb_id,
+                    "create_time": nb.get("createTime"),
+                    "is_owner": True,
+                    "role": "owner",
+                }
+            )
+        cur_token = data.get("nextPageToken")
+        if not fetch_all or not cur_token:
+            break
     return result
 
 

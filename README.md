@@ -23,6 +23,7 @@
   - 重负载高消耗任务自动优先匹配 Ultra；配额触顶自动降级进入 **`later=True` 官方延时队列** 或 **`waiting_quota` 重置唤醒状态机**；服务崩溃重启自动恢复 `'running'` 僵尸任务。
 - **跨账号耦合与标准化 Drive Hub**
   - 通过 Editor 共享 + Google Drive Hub 镜像双兜底让多号协同生产同一主题，所有产物按 `00_Control` / `01_Inbox` / `02_Topics/<主题>/{Sources,Artifacts}` / `03_Exports` 自动归档。
+  - **Studio 内容占比与笔记本全景 (`v0.2.0`)**：同步全库笔记本及真实来源数，自动扫描并统计每个笔记本与全库池的视频 / 音频 / 幻灯片 / 思维导图 / 测验 / 闪卡 / 交互微应用等多模态 **Studio 占比分布**；点击任意笔记本卡片可打开独立子网页 (`/notebooks/{id}`)，内含 SVG 环形分布图、按类筛选下载至 Drive Hub、来源快速追加与可溯源对话。
 - **开箱即用 Web 控制面板 + 跨 IDE 原子技能包**
   - 内置常驻全工作区文件浏览器、预览与资料篮（`http://127.0.0.1:8765`）；
   - 对上同时提供 **42 路径 / 47 操作 REST API**、**10 工具本机 Stdio MCP** 与 **6 个跨工具原子化 Skills**（适配 **Antigravity / Claude Code / Cursor / Codex / Windsurf**）。

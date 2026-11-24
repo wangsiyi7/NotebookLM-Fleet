@@ -63,16 +63,21 @@ CREATE TABLE IF NOT EXISTS topics (
 
 -- 4. Notebooks inventory across accounts
 CREATE TABLE IF NOT EXISTS notebooks (
-    id                 INTEGER PRIMARY KEY AUTOINCREMENT,
-    topic_id           INTEGER REFERENCES topics(id) ON DELETE SET NULL,
-    account_id         INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-    remote_notebook_id TEXT NOT NULL,
-    title              TEXT NOT NULL,
-    is_master          INTEGER NOT NULL DEFAULT 0,
-    source_count       INTEGER NOT NULL DEFAULT 0,
-    artifact_count     INTEGER NOT NULL DEFAULT 0,
-    shared_emails_json TEXT NOT NULL DEFAULT '[]',
-    synced_at          TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+    topic_id              INTEGER REFERENCES topics(id) ON DELETE SET NULL,
+    account_id            INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    remote_notebook_id    TEXT NOT NULL,
+    title                 TEXT NOT NULL,
+    is_master             INTEGER NOT NULL DEFAULT 0,
+    role                  TEXT NOT NULL DEFAULT 'owner',
+    source_count          INTEGER NOT NULL DEFAULT 0,
+    artifact_count        INTEGER NOT NULL DEFAULT 0,
+    shared_emails_json    TEXT NOT NULL DEFAULT '[]',
+    studio_stats_json     TEXT NOT NULL DEFAULT '{}',
+    remote_artifacts_json TEXT NOT NULL DEFAULT '[]',
+    remote_sources_json   TEXT NOT NULL DEFAULT '[]',
+    studio_synced_at      TEXT,
+    synced_at             TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     UNIQUE(account_id, remote_notebook_id)
 );
 

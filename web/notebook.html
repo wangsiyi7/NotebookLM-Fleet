@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>笔记本详情 · NotebookLM Fleet</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23136f63'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='32' font-family='serif'%3EN%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f5f3ee; --card:#ffffff; --ink:#20241f; --muted:#747a72;
+  --line:#e4e0d5; --accent:#136f63; --accent-soft:#e3f0ed;
+  --red:#b3402f; --amber:#9a6b16; --blue:#2456a6; --panel:#faf8f3;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.58}
+.top-wrap{background:var(--card);border-bottom:2px solid var(--ink);padding:12px 20px;position:sticky;top:0;z-index:40}
+.top{max-width:1360px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.title-area h1{font-family:"Songti SC","STSong",serif;font-size:20px;line-height:1.35;margin-top:4px;word-break:break-word}
+.meta-pills{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+.btn{appearance:none;border:1px solid var(--ink);background:var(--card);color:var(--ink);padding:6px 12px;border-radius:8px;font-size:12.5px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.btn:hover{background:#f0ede4}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#0e5a50}
+.btn.sm{padding:4px 9px;font-size:11.5px;border-radius:6px;border-color:#c9c4b7}
+
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:500;white-space:nowrap}
+.p-green{background:#e4f1ec;color:#136f63}
+.p-blue{background:#e8eef9;color:#2456a6}
+.p-amber{background:#f7efdd;color:#9a6b16}
+.p-red{background:#f9e7e3;color:#b3402f}
+.p-gray{background:#ededeb;color:#5a605a}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}
+.hint{font-size:12px;color:var(--muted)}
+
+.wrap{max-width:1360px;margin:0 auto;padding:18px 20px 64px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px}
+.card h2{font-size:15.5px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+
+.analytics-grid{display:grid;grid-template-columns:220px 1fr;gap:18px;align-items:center}
+@media (max-width:780px){.analytics-grid{grid-template-columns:1fr}}
+.donut-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center}
+.studio-stack{display:flex;height:14px;width:100%;border-radius:999px;overflow:hidden;background:#ece8dc;gap:1px;margin-bottom:10px}
+.studio-seg{height:100%}
+.bd-table{width:100%;border-collapse:collapse;font-size:13px}
+.bd-table th{text-align:left;font-size:12px;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line);font-weight:600}
+.bd-table td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.bd-table tr:last-child td{border-bottom:none}
+.bd-row{cursor:pointer}
+.bd-row:hover{background:#faf8f3}
+.mini-bar{height:8px;background:#ece8dc;border-radius:999px;overflow:hidden;min-width:90px}
+.mini-bar > span{display:block;height:100%;border-radius:999px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px;overflow-x:auto}
+.tab{background:none;border:none;padding:9px 14px;font-size:13.5px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.tab.active{color:var(--ink);font-weight:700;border-bottom-color:var(--accent)}
+.panel{display:none}
+.panel.show{display:block}
+
+.filter-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.fpill{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:4px 10px;border-radius:999px;font-size:12px;cursor:pointer}
+.fpill.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+.art-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.art-card{border:1px solid var(--line);border-radius:10px;padding:12px 13px;background:var(--panel);display:flex;flex-direction:column;gap:7px}
+.art-title{font-weight:600;font-size:13.5px;line-height:1.4;word-break:break-word}
+.art-foot{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:auto;padding-top:6px;border-top:1px dashed var(--line)}
+
+.tablebox{border:1px solid var(--line);border-radius:10px;overflow:auto;background:#fff}
+.src-table{width:100%;border-collapse:collapse;min-width:600px;font-size:13px}
+.src-table th{background:var(--panel);color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);font-size:12px}
+.src-table td{padding:8px 10px;border-bottom:1px solid var(--line);word-break:break-word}
+.src-table tr:last-child td{border-bottom:none}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+.form-grid label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:4px}
+.form-grid .full{grid-column:1/-1}
+.form-grid input,.form-grid select,.form-grid textarea{padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;color:var(--ink);background:#fff;font-family:inherit}
+.check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:7px;margin-top:4px}
+.check-item{display:flex !important;flex-direction:row !important;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;font-size:12.5px !important;color:var(--ink) !important;cursor:pointer;background:#faf8f2}
+
+.chat-log{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.chat-turn{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#faf8f3}
+.chat-q{font-weight:700;color:var(--accent);margin-bottom:6px}
+.chat-a{white-space:pre-wrap;line-height:1.65}
+
+.toast{position:fixed;right:18px;bottom:18px;z-index:80;background:#20241f;color:#fff;padding:10px 16px;border-radius:9px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.2);display:none;max-width:440px}
+.toast.show{display:block}
+.toast.err{background:#b3402f}
+</style>
+</head>
+<body>
+<div class="top-wrap">
+  <div class="top">
+    <div class="title-area">
+      <div>
+        <a class="btn sm" href="/?tab=panelNotebooks">← 返回笔记本全景</a>
+        <span class="hint mono" id="nbUuidSpan" style="margin-left:8px"></span>
+      </div>
+      <h1 id="nbTitle">加载笔记本详情中…</h1>
+      <div class="meta-pills" id="nbMetaPills"></div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="btnRefreshNb" onclick="refreshNow()">🔄 实时同步此本</button>
+      <a class="btn" id="btnOpenOrigin" href="https://notebook.google.com/" target="_blank" rel="noopener">↗ 在 Google 原页打开</a>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+  <div id="warnBanner" class="card" style="display:none;background:#fdf4ec;border-color:#e5bfa5;color:#9a3b26"></div>
+
+  <!-- Hero: Studio Proportion Breakdown -->
+  <section class="card">
+    <h2>
+      <span>📊 Studio 内容构成与占比统计</span>
+      <span class="hint" id="studioSyncTime">—</span>
+    </h2>
+    <div class="analytics-grid" id="analyticsBody">
+      <div class="donut-wrap" id="donutWrap"></div>
+      <div>
+        <div class="studio-stack" id="nbStackBar"></div>
+        <div id="breakdownTableWrap"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sub Tabs -->
+  <div class="tabs">
+    <button class="tab active" data-panel="subStudio" id="tabBtnStudio">🎨 Studio 产物 (0)</button>
+    <button class="tab" data-panel="subSources" id="tabBtnSources">📄 来源资料 (0)</button>
+    <button class="tab" data-panel="subChat">💬 可溯源对话 (Chat)</button>
+    <button class="tab" data-panel="subTasks" id="tabBtnTasks">⚙️ 本地任务与归档</button>
+  </div>
+
+  <!-- Tab 1: Studio Artifacts & Generate -->
+  <section class="panel show" id="subStudio">
+    <div class="card">
+      <h2>
+        <span>🎨 远程 Studio 产物列表（点击上方统计行或下方胶囊可按类型筛选）</span>
+        <button class="btn primary sm" onclick="toggleGenBox()">⚡ 为此本生成新 Studio</button>
+      </h2>
+      <div id="genBox" style="display:none;margin-bottom:14px;padding:12px;border:1px solid var(--line);border-radius:10px;background:#faf8f3">
+        <div class="form-grid">
+          <div class="full">
+            <div style="font-size:12px;color:var(--muted)">选择要排程生成的内容（按所属账号额度池自动执行并归档）：</div>
+            <div class="check-grid" id="genCheckGrid"></div>
+          </div>
+          <label>输出语言<input id="genLang" value="zh-Hans"></label>
+          <label>聚焦指令 / 提示词（可选）<input id="genInst" placeholder="例如：突出架构取舍与新手科普"></label>
+        </div>
+        <div style="margin-top:10px;display:flex;justify-content:flex-end;gap:8px">
+          <button class="btn sm" onclick="toggleGenBox()">收起</button>
+          <button class="btn primary sm" onclick="submitGenerate()">提交生成任务</button>
+        </div>
+      </div>
+      <div class="filter-pills" id="studioFilterPills"></div>
+      <div class="art-grid" id="artifactsGrid"></div>
+    </div>
+  </section>
+
+  <!-- Tab 2: Sources & Quick Ingest -->
+  <section class="panel" id="subSources">
+    <div class="card">
+      <h2>
+        <span>📄 笔记本来源清单</span>
+        <input type="search" id="srcFilterInput" placeholder="过滤来源标题..." style="padding:5px 9px;border:1px solid var(--line);border-radius:7px;font-size:12.5px" oninput="renderSources()">
+      </h2>
+      <div class="tablebox" style="margin-bottom:14px">
+        <table class="src-table">
+          <thead><tr><th>来源标题</th><th>类型</th><th>状态</th><th>字数</th><th>创建时间</th><th>链接</th></tr></thead>
+          <tbody id="sourcesBody"></tbody>
+        </table>
+      </div>
+      <h2 style="margin-top:10px"><span>➕ 快速追加网址或 Markdown 笔记到此笔记本</span></h2>
+      <div class="form-grid">
+        <label>追加网页 / YouTube URL（每行一条）<textarea id="addUrls" rows="3" placeholder="https://..."></textarea></label>
+        <label>追加内联文本 / Markdown 笔记
+          <input id="addTextTitle" placeholder="笔记标题（可选）" style="margin-bottom:5px">
+          <textarea id="addTextBody" rows="2" placeholder="粘贴笔记内容..."></textarea>
+        </label>
+      </div>
+      <div style="margin-top:10px;display:flex;justify-content:flex-end">
+        <button class="btn primary sm" id="btnIngestNb" onclick="submitNbIngest()">🚀 立即写入此笔记本</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tab 3: Grounded Chat -->
+  <section class="panel" id="subChat">
+    <div class="card">
+      <h2><span>💬 严格基于本笔记本来源的对话 (Grounded Chat)</span></h2>
+      <div class="form-grid">
+        <label class="full">提问内容<textarea id="chatQuestion" rows="3" placeholder="例如：请结合本笔记本所有来源，梳理核心模块边界、配额策略与注意事项。"></textarea></label>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px">
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <label style="font-size:12.5px;display:flex;align-items:center;gap:5px"><input type="checkbox" id="chatSaveNote"> 同时存为 Notebook 内部 Note</label>
+          <label style="font-size:12.5px;display:flex;align-items:center;gap:5px"><input type="checkbox" id="chatSaveMd" checked> 自动导出 .md 到 Drive Hub</label>
+        </div>
+        <button class="btn primary" id="btnSendChat" onclick="sendChat()">发送提问</button>
+      </div>
+      <div class="chat-log" id="chatLog"></div>
+    </div>
+  </section>
+
+  <!-- Tab 4: Local Tasks & Drive Archives -->
+  <section class="panel" id="subTasks">
+    <div class="card">
+      <h2><span>⚙️ 关联调度任务与本地已归档产物</span></h2>
+      <div class="tablebox" style="margin-bottom:14px">
+        <table class="src-table">
+          <thead><tr><th>任务ID</th><th>类型</th><th>通道</th><th>状态</th><th>结果 / 错误</th><th>时间</th></tr></thead>
+          <tbody id="nbTasksBody"></tbody>
+        </table>
+      </div>
+      <div class="tablebox">
+        <table class="src-table">
+          <thead><tr><th>类型</th><th>本地归档标题</th><th>Drive / 本地路径</th><th>归档时间</th></tr></thead>
+          <tbody id="nbLocalArtsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const MATCH = window.location.pathname.match(/\/notebooks\/(\d+)/);
+const NB_ID = MATCH ? Number(MATCH[1]) : 0;
+let DETAIL = null;
+let STUDIO_FILTER = "all";
+
+function $(s){ return document.querySelector(s); }
+function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function safeHttpUrl(u){
+  const s = String(u || "").trim();
+  return (s.startsWith("https://") || s.startsWith("http://")) ? s : "";
+}
+function toast(msg, isErr=false){
+  const el = $("#toast");
+  el.textContent = msg;
+  el.className = "toast show" + (isErr ? " err" : "");
+  clearTimeout(window._tt);
+  window._tt = setTimeout(() => el.classList.remove("show"), 3800);
+}
+async function api(path, opts={}){
+  const res = await fetch(path, {headers: {"Content-Type":"application/json"}, ...opts});
+  const data = await res.json().catch(() => ({}));
+  if(!res.ok) throw new Error(data.detail || ("HTTP " + res.status));
+  return data;
+}
+
+document.querySelectorAll(".tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const pid = btn.dataset.panel;
+    document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.panel === pid));
+    document.querySelectorAll(".panel").forEach(p => p.classList.toggle("show", p.id === pid));
+  });
+});
+
+function initGenCheckGrid(){
+  const kinds = [
+    ["audio","🎙️ 音频播客"],["video","🎬 视频概览"],["cinematic_video","🎥 电影级视频"],
+    ["slide_deck","📊 幻灯片"],["quiz","📝 测验题"],["flashcards","🗂️ 闪卡"],
+    ["infographic","🖼️ 信息图"],["mind_map","🧠 思维导图"],["report","📄 简报文档"],
+    ["study_guide","📚 学习指南"],["data_table","📈 对比表"],["chat","💬 Chat 汇总"]
+  ];
+  $("#genCheckGrid").innerHTML = kinds.map(([v, lbl]) =>
+    `<label class="check-item"><input type="checkbox" name="nbGenAct" value="${v}"><span>${lbl}</span></label>`
+  ).join("");
+}
+
+function renderDonutSvg(byKind, total){
+  if(!byKind || !byKind.length || !total){
+    return `<svg viewBox="0 0 180 180" width="168" height="168">
+      <circle cx="90" cy="90" r="64" fill="none" stroke="#ece8dc" stroke-width="22"/>
+      <text x="90" y="88" text-anchor="middle" font-size="22" font-weight="700" fill="#747a72">0</text>
+      <text x="90" y="108" text-anchor="middle" font-size="11" fill="#747a72">暂无 Studio</text>
+    </svg>`;
+  }
+  const r = 64;
+  const circ = 2 * Math.PI * r;
+  let offset = 0;
+  const arcs = byKind.map(item => {
+    const segLen = (item.count / total) * circ;
+    const svgSeg = `<circle cx="90" cy="90" r="${r}" fill="none" stroke="${esc(item.color)}" stroke-width="22" stroke-dasharray="${segLen.toFixed(2)} ${(circ - segLen).toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}" transform="rotate(-90 90 90)"><title>${esc(item.label)}: ${item.count} (${item.pct}%)</title></circle>`;
+    offset += segLen;
+    return svgSeg;
+  }).join("");
+  return `<svg viewBox="0 0 180 180" width="168" height="168">
+    <circle cx="90" cy="90" r="${r}" fill="none" stroke="#ece8dc" stroke-width="22"/>
+    ${arcs}
+    <text x="90" y="86" text-anchor="middle" font-size="24" font-weight="800" fill="#20241f">${total}</text>
+    <text x="90" y="106" text-anchor="middle" font-size="11" fill="#747a72">Studio 总计</text>
+  </svg>`;
+}
+
+function renderAll(){
+  if(!DETAIL) return;
+  const nb = DETAIL.notebook || {};
+  const st = DETAIL.studio_stats || {};
+  const srcs = DETAIL.sources || [];
+  const arts = DETAIL.artifacts || [];
+  const notes = DETAIL.notes || [];
+
+  document.title = `${nb.title || "笔记本"} · NotebookLM Fleet`;
+  $("#nbTitle").textContent = nb.title || "(未命名笔记本)";
+  $("#nbUuidSpan").textContent = nb.remote_notebook_id || "";
+  if(nb.web_url) $("#btnOpenOrigin").href = nb.web_url;
+
+  const roleBadge = nb.is_master
+    ? '<span class="pill p-green">自有 Owner</span>'
+    : `<span class="pill p-blue">${esc(nb.role || "共享协作者")}</span>`;
+  $("#nbMetaPills").innerHTML = [
+    `<span class="pill p-gray">账号: ${esc(nb.account_alias)} (${esc(nb.account_tier || "ultra")})</span>`,
+    roleBadge,
+    `<span class="pill p-blue">📄 ${srcs.length || nb.source_count || 0} 个来源</span>`,
+    `<span class="pill p-amber">🎨 ${st.total != null ? st.total : arts.length} 项 Studio</span>`,
+    notes.length ? `<span class="pill p-gray">🗒️ ${notes.length} 条 Notes</span>` : "",
+    nb.topic_name ? `<span class="pill p-green">主题: ${esc(nb.topic_name)}</span>` : ""
+  ].join("");
+
+  const wb = $("#warnBanner");
+  if(DETAIL.refresh_error){
+    wb.style.display = "block";
+    wb.textContent = "⚠️ 远程实时同步返回提示（当前先展示本地缓存）： " + DETAIL.refresh_error;
+  }else{
+    wb.style.display = "none";
+  }
+
+  $("#studioSyncTime").textContent = st.synced_at ? ("统计时间: " + st.synced_at) : "尚未同步 Studio";
+  const byKind = st.by_kind || [];
+  const totalArts = Number(st.total != null ? st.total : arts.length);
+  $("#donutWrap").innerHTML = renderDonutSvg(byKind, totalArts);
+  $("#nbStackBar").innerHTML = byKind.length
+    ? byKind.map(x => `<div class="studio-seg" title="${esc(x.label)}: ${x.count} (${x.pct}%)" style="width:${Math.max(1.5, x.pct)}%;background:${esc(x.color)}"></div>`).join("")
+    : "";
+
+  if(!byKind.length){
+    $("#breakdownTableWrap").innerHTML = `<div class="hint" style="padding:12px 0">该笔记本目前暂无远程 Studio 产物。点击下方「⚡ 为此本生成新 Studio」可直接创建音频、视频、PPT 或测验题库。</div>`;
+  }else{
+    $("#breakdownTableWrap").innerHTML = `<table class="bd-table">
+      <thead><tr><th>Studio 类别</th><th>数量</th><th>占比</th><th>分布条</th></tr></thead>
+      <tbody>
+        ${byKind.map(k => `<tr class="bd-row" onclick="selectStudioKind('${esc(k.kind)}')">
+          <td><span class="dot" style="background:${esc(k.color)};margin-right:6px"></span>${esc(k.icon)} <b>${esc(k.label)}</b></td>
+          <td class="mono"><b>${k.count}</b></td>
+          <td class="mono" style="color:${esc(k.color)};font-weight:700">${k.pct}%</td>
+          <td><div class="mini-bar"><span style="width:${Math.min(100, k.pct)}%;background:${esc(k.color)}"></span></div></td>
+        </tr>`).join("")}
+      </tbody>
+    </table>`;
+  }
+
+  $("#tabBtnStudio").textContent = `🎨 Studio 产物 (${arts.length})`;
+  $("#tabBtnSources").textContent = `📄 来源资料 (${srcs.length})`;
+  $("#tabBtnTasks").textContent = `⚙️ 本地任务 (${(DETAIL.recent_tasks || []).length})与归档 (${(DETAIL.local_artifacts || []).length})`;
+
+  renderArtifacts();
+  renderSources();
+  renderLocalTasksAndArchives();
+}
+
+function selectStudioKind(kind){
+  STUDIO_FILTER = (STUDIO_FILTER === kind) ? "all" : kind;
+  renderArtifacts();
+}
+
+function renderArtifacts(){
+  const arts = (DETAIL && DETAIL.artifacts) || [];
+  const byKind = (DETAIL && DETAIL.studio_stats && DETAIL.studio_stats.by_kind) || [];
+  const pills = [`<button class="fpill ${STUDIO_FILTER === "all" ? "active" : ""}" onclick="selectStudioKind('all')">全部 (${arts.length})</button>`].concat(
+    byKind.map(k => `<button class="fpill ${STUDIO_FILTER === k.kind ? "active" : ""}" onclick="selectStudioKind('${esc(k.kind)}')">${esc(k.icon)} ${esc(k.label)} (${k.count} · ${k.pct}%)</button>`)
+  );
+  $("#studioFilterPills").innerHTML = pills.join("");
+
+  const filtered = STUDIO_FILTER === "all" ? arts : arts.filter(a => a.kind === STUDIO_FILTER);
+  const grid = $("#artifactsGrid");
+  if(!filtered.length){
+    grid.innerHTML = '<div class="hint" style="grid-column:1/-1;padding:18px 0">当前筛选下暂无 Studio 产物。</div>';
+    return;
+  }
+  grid.innerHTML = filtered.map(a => {
+    const extUrl = safeHttpUrl(a.url);
+    const metaParts = [];
+    if(a.duration_seconds != null) metaParts.push(`时长 ${a.duration_seconds}s`);
+    if(a.slides_count > 0) metaParts.push(`${a.slides_count} 页`);
+    if(a.infographics_count > 0) metaParts.push(`${a.infographics_count} 图`);
+    if(a.source_ids_count > 0) metaParts.push(`引用 ${a.source_ids_count} 源`);
+    const stCls = a.status === "completed" ? "p-green" : a.status === "failed" ? "p-red" : "p-amber";
+    return `<div class="art-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+        <span class="pill" style="background:#f3f1ea;color:${esc(a.color)};border:1px solid #dfd9cb">${esc(a.icon)} ${esc(a.label)}</span>
+        <span class="pill ${stCls}">${esc(a.status)}</span>
+      </div>
+      <div class="art-title">${esc(a.title)}</div>
+      <div class="hint mono">${esc(metaParts.join(" · ") || a.kind)}${a.created_at ? " · " + esc(a.created_at.slice(0, 16).replace("T", " ")) : ""}</div>
+      <div class="art-foot">
+        <span class="hint mono">${esc((a.id || "").slice(0, 12))}</span>
+        <div style="display:flex;gap:6px">
+          ${a.downloadable ? `<button class="btn sm" onclick="downloadArt('${esc(a.id)}', '${esc(a.kind)}', this)">⬇️ 下载归档</button>` : ""}
+          ${extUrl ? `<a class="btn sm" href="${esc(extUrl)}" target="_blank" rel="noopener">↗ 查看</a>` : ""}
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function renderSources(){
+  const srcs = (DETAIL && DETAIL.sources) || [];
+  const q = ($("#srcFilterInput") && $("#srcFilterInput").value || "").trim().toLowerCase();
+  const list = q ? srcs.filter(s => (s.title || "").toLowerCase().includes(q)) : srcs;
+  $("#sourcesBody").innerHTML = list.length ? list.map(s => {
+    const url = safeHttpUrl(s.url);
+    return `<tr>
+      <td><b>${esc(s.title)}</b></td>
+      <td class="mono">${esc(s.kind)}</td>
+      <td><span class="pill p-green">${esc(s.status)}</span></td>
+      <td class="mono">${s.word_count != null ? s.word_count : "—"}</td>
+      <td class="mono">${esc((s.created_at || "").slice(0, 16).replace("T", " ") || "—")}</td>
+      <td>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">打开原链接</a>` : '<span class="hint">—</span>'}</td>
+    </tr>`;
+  }).join("") : '<tr><td colspan="6" class="hint" style="text-align:center;padding:18px">暂无匹配来源资料</td></tr>';
+}
+
+function renderLocalTasksAndArchives(){
+  const tasks = (DETAIL && DETAIL.recent_tasks) || [];
+  $("#nbTasksBody").innerHTML = tasks.length ? tasks.map(t => `<tr>
+    <td class="mono">#${t.id}</td>
+    <td class="mono">${esc(t.task_type)}</td>
+    <td class="mono">${esc(t.channel_used || "—")}</td>
+    <td><span class="pill p-blue">${esc(t.status)}</span></td>
+    <td>${esc(t.error_msg || t.result_artifact_path || t.result_text || "—")}</td>
+    <td class="mono">${esc(t.created_at)}</td>
+  </tr>`).join("") : '<tr><td colspan="6" class="hint" style="text-align:center;padding:14px">暂无通过本地调度队列下发的任务</td></tr>';
+
+  const arts = (DETAIL && DETAIL.local_artifacts) || [];
+  $("#nbLocalArtsBody").innerHTML = arts.length ? arts.map(a => `<tr>
+    <td class="mono">${esc(a.kind)}</td>
+    <td><b>${esc(a.title)}</b></td>
+    <td class="mono">${esc(a.local_drive_path || "—")}</td>
+    <td class="mono">${esc(a.created_at)}</td>
+  </tr>`).join("") : '<tr><td colspan="4" class="hint" style="text-align:center;padding:14px">暂无本地已下载归档的产物</td></tr>';
+}
+
+function toggleGenBox(){
+  const box = $("#genBox");
+  box.style.display = box.style.display === "none" ? "block" : "none";
+}
+
+async function submitGenerate(){
+  const acts = Array.from(document.querySelectorAll('input[name="nbGenAct"]:checked')).map(el => el.value);
+  if(!acts.length) return toast("请至少勾选一种要生成的 Studio 类型", true);
+  try{
+    const r = await api(`/api/notebooks/${NB_ID}/generate`, {
+      method: "POST",
+      body: JSON.stringify({
+        actions: acts,
+        language: ($("#genLang").value || "zh-Hans").trim(),
+        instructions: ($("#genInst").value || "").trim() || null
+      })
+    });
+    toggleGenBox();
+    toast(`已将 ${r.created_count} 个生成任务加入调度队列 (${r.batch_id})`);
+    await loadDetail(false);
+  }catch(e){ toast(e.message, true); }
+}
+
+async function submitNbIngest(){
+  const urls = ($("#addUrls").value || "").split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const title = ($("#addTextTitle").value || "").trim();
+  const txt = ($("#addTextBody").value || "").trim();
+  if(!urls.length && !txt) return toast("请输入至少一条网址或笔记内容", true);
+  const btn = $("#btnIngestNb");
+  btn.disabled = true; btn.textContent = "写入中…";
+  try{
+    const r = await api(`/api/notebooks/${NB_ID}/ingest`, {
+      method: "POST",
+      body: JSON.stringify({urls, inline_title: title || null, inline_text: txt || null})
+    });
+    $("#addUrls").value = ""; $("#addTextTitle").value = ""; $("#addTextBody").value = "";
+    toast(`写入完成：成功 ${r.success_count} 项`);
+    await loadDetail(false);
+  }catch(e){ toast(e.message, true); }
+  finally{ btn.disabled = false; btn.textContent = "🚀 立即写入此笔记本"; }
+}
+
+async function downloadArt(artId, kind, btn){
+  if(btn){ btn.disabled = true; btn.textContent = "下载中…"; }
+  try{
+    const r = await api(`/api/notebooks/${NB_ID}/artifacts/${encodeURIComponent(artId)}/download`, {
+      method: "POST",
+      body: JSON.stringify({kind})
+    });
+    toast("已下载归档至: " + r.local_drive_path);
+    await loadDetail(false);
+  }catch(e){ toast(e.message, true); }
+  finally{ if(btn){ btn.disabled = false; btn.textContent = "⬇️ 下载归档"; } }
+}
+
+async function sendChat(){
+  const q = ($("#chatQuestion").value || "").trim();
+  if(!q) return toast("请输入问题", true);
+  const btn = $("#btnSendChat");
+  btn.disabled = true; btn.textContent = "检索来源生成中…";
+  try{
+    const r = await api(`/api/notebooks/${NB_ID}/chat`, {
+      method: "POST",
+      body: JSON.stringify({
+        question: q,
+        save_as_note: $("#chatSaveNote").checked,
+        save_markdown_export: $("#chatSaveMd").checked
+      })
+    });
+    const turnHtml = `<div class="chat-turn">
+      <div class="chat-q">Q: ${esc(q)} <span class="pill p-blue" style="margin-left:6px">引用 ${r.references_count || 0} 处</span>${r.saved_md_path ? ` <span class="pill p-green">已归档 .md</span>` : ""}</div>
+      <div class="chat-a">${esc(r.answer || "")}</div>
+      ${r.saved_md_path ? `<div class="hint mono" style="margin-top:6px">导出路径: ${esc(r.saved_md_path)}</div>` : ""}
+    </div>`;
+    $("#chatLog").insertAdjacentHTML("afterbegin", turnHtml);
+    $("#chatQuestion").value = "";
+  }catch(e){ toast(e.message, true); }
+  finally{ btn.disabled = false; btn.textContent = "发送提问"; }
+}
+
+async function loadDetail(forceRefresh=false){
+  if(!NB_ID) return;
+  try{
+    DETAIL = await api(`/api/notebooks/${NB_ID}${forceRefresh ? "?refresh=true" : ""}`);
+    renderAll();
+  }catch(e){
+    $("#nbTitle").textContent = "加载失败";
+    toast(e.message, true);
+  }
+}
+
+async function refreshNow(){
+  const btn = $("#btnRefreshNb");
+  btn.disabled = true; btn.textContent = "正在从云端同步…";
+  try{
+    DETAIL = await api(`/api/notebooks/${NB_ID}/refresh`, {method: "POST"});
+    renderAll();
+    toast("已完成最新来源与 Studio 占比同步");
+  }catch(e){ toast(e.message, true); }
+  finally{ btn.disabled = false; btn.textContent = "🔄 实时同步此本"; }
+}
+
+initGenCheckGrid();
+loadDetail(false);
+</script>
+</body>
+</html>
