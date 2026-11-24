@@ -14,7 +14,7 @@
 | [nlm-grounded-qa](./nlm-grounded-qa/SKILL.md) | 围绕指定笔记本做**严格基于来源的可溯源问答**，支持保存 Note 并导出本地 Markdown | 只读问答 / 可选落盘归档 | `fleet_enqueue_batch(actions=["chat"])` / `POST /api/tasks` / `ask_question` | Notebook/Topic + 问题列表 → 带引用出处的答案 + `.md` 归档路径 |
 | [nlm-studio-factory](./nlm-studio-factory/SKILL.md) | 调度生成并自动下载全套 **11 类 Studio 多模态产出**，含 `conserve_ultra` 与 `later=True` 保护 | 高算力写入 | `fleet_enqueue_batch` / `POST /api/tasks/batch` / `fleet_task_status` | Topic ID + 产出列表 + 提示词 → `DriveHub/02_Topics/<Topic>/Artifacts/*` |
 | [nlm-repo-to-notebook](./nlm-repo-to-notebook/SKILL.md) | 将代码仓库或项目目录切片、**强制脱敏过滤敏感文件**后批量知识化入库 NotebookLM | 读写流水线 | `GET /api/workspace/tree` + `POST /api/official/quick-add` + `fleet_create_topic_and_ingest` | 项目目录 + 主题名 → 脱敏后的正交 `.md` 包 + 激活的远程笔记本 |
-| [nlm-account-ops](./nlm-account-ops/SKILL.md) | 免密多账号授权与故障自愈（Official OAuth 直跳、独立 Chrome CDP 采集、cURL 快速导入） | 会话配置（零明文密码） | `GET /api/accounts/{id}/oauth-redirect`, `POST .../capture-cdp`, `POST .../import-cookies-raw` | 账号别名 + 登录态问题 → 恢复双通道 `ok` 状态 |
+| [nlm-account-ops](./nlm-account-ops/SKILL.md) | 免密多账号授权与故障自愈（Official OAuth 直跳、CMD/Chrome 独立窗口持久登录、无感续期、cURL 导入） | 会话配置（零明文密码） | `GET /api/accounts/{id}/oauth-redirect`, `GET .../login-script.cmd`, `POST .../refresh-session`, `POST .../capture-cdp`, `POST .../import-cookies-raw` | 账号别名 + 登录态问题 → 恢复长期持久与双通道 `ok` 状态 |
 
 ---
 
@@ -22,7 +22,7 @@
 
 所有原子 Skill 与原生 MCP 服务端均通过本地服务解耦：
 - **本地 REST 控制面**：`http://127.0.0.1:8765`
-- **本机 Stdio MCP (`notebooklm-fleet`, 10 工具)**：`uv --directory <NotebookLM-Fleet> run python -m app.mcp_server`
+- **本机 Stdio MCP (`notebooklm-fleet`, 15 工具)**：`uv --directory <NotebookLM-Fleet> run python -m app.mcp_server`
 - **Google 官方 Remote MCP (`https://notebook.googleapis.com/mcp`, 7 工具)**：Bearer OAuth + `x-goog-user-project`
 
 ### 各工具安装方式

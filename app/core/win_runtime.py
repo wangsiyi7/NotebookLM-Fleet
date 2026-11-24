@@ -237,6 +237,50 @@ def pick_folder_native(
     return selected or None
 
 
+def get_current_desktop_name() -> str:
+    """Return the current Win32 desktop name (or ``Default`` on non-Windows).
+
+    Inside an isolated execution desktop such as ``WinSta0\\exebox-...``, this
+    returns the non-default desktop name cleanly using read-only Win32 APIs.
+    """
+    if sys.platform != "win32":
+        return "Default"
+    try:
+        user32 = ctypes.windll.user32
+        kernel32 = ctypes.windll.kernel32
+        UOI_NAME = 2
+
+        def _query_obj_name(handle: Any) -> str:
+            if not handle:
+                return ""
+            needed = ctypes.c_ulong(0)
+            user32.GetUserObjectInformationW(handle, UOI_NAME, None, 0, ctypes.byref(needed))
+            if needed.value <= 0:
+                return ""
+            buf = ctypes.create_unicode_buffer(needed.value // 2 + 2)
+            ok = user32.GetUserObjectInformationW(
+                handle, UOI_NAME, buf, ctypes.sizeof(buf), ctypes.byref(needed)
+            )
+            return buf.value.strip() if ok else ""
+
+        winsta = _query_obj_name(user32.GetProcessWindowStation())
+        hdesk = user32.GetThreadDesktop(kernel32.GetCurrentThreadId())
+        desk = _query_obj_name(hdesk)
+        if winsta and winsta.lower() != "winsta0":
+            return f"{winsta}\\{desk}" if desk else winsta
+        return desk or "Default"
+    except Exception:
+        return "Default"
+
+
+def is_interactive_desktop() -> bool:
+    """Return True when running in the user's interactive WinSta0\\Default desktop."""
+    if sys.platform != "win32":
+        return True
+    desktop = get_current_desktop_name()
+    return desktop.strip().lower() == "default"
+
+
 def reveal_in_explorer(target_path: str | Path) -> dict[str, Any]:
     """Open Windows Explorer and select a file (or open a folder)."""
     resolved = Path(target_path).resolve()

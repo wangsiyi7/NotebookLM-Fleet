@@ -1,6 +1,6 @@
 # Build Windows x64 EXE, Portable ZIP, and Setup Installer for NotebookLM-Fleet
 param(
-    [string]$Version = "0.3.0"
+    [string]$Version = "0.3.1"
 )
 
 $ErrorActionPreference = "Stop"

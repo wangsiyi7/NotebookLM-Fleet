@@ -403,7 +403,7 @@ function renderArtifacts(){
       <div class="art-foot">
         <span class="hint mono">${esc((a.id || "").slice(0, 12))}</span>
         <div style="display:flex;gap:6px">
-          ${a.downloadable ? `<button class="btn sm" onclick="downloadArt('${esc(a.id)}', '${esc(a.kind)}', this)">⬇️ 下载归档</button>` : ""}
+          ${a.downloadable ? `<button class="btn sm" onclick="downloadArt(decodeURIComponent('${encodeURIComponent(a.id || "")}'), decodeURIComponent('${encodeURIComponent(a.kind || "")}'), this)">⬇️ 下载归档</button>` : ""}
           ${extUrl ? `<a class="btn sm" href="${esc(extUrl)}" target="_blank" rel="noopener">↗ 查看</a>` : ""}
         </div>
       </div>

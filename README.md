@@ -1,9 +1,9 @@
 # NotebookLM-Fleet
 
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](pyproject.toml)
-[![FastAPI](https://img.shields.io/badge/FastAPI-v0.3.0%20Desktop%20%26%20Web-009688?logo=fastapi&logoColor=white)](app/main.py)
+[![FastAPI](https://img.shields.io/badge/FastAPI-v0.3.1%20Desktop%20%26%20Web-009688?logo=fastapi&logoColor=white)](app/main.py)
 [![MCP](https://img.shields.io/badge/MCP-Local%2015%20Tools%20%2B%20Official%20Remote-136f63)](app/mcp_server.py)
-[![Windows x64](https://img.shields.io/badge/Windows%20x64-Setup%20EXE%20%26%20Portable-2456a6?logo=windows&logoColor=white)](https://github.com/wangsiyi7/NotebookLM-Fleet/releases/tag/v0.3.0)
+[![Windows x64](https://img.shields.io/badge/Windows%20x64-Setup%20EXE%20%26%20Portable-2456a6?logo=windows&logoColor=white)](https://github.com/wangsiyi7/NotebookLM-Fleet/releases/tag/v0.3.1)
 [![License: MIT](https://img.shields.io/badge/License-MIT-amber.svg)](LICENSE)
 [![CI](https://github.com/wangsiyi7/NotebookLM-Fleet/actions/workflows/ci.yml/badge.svg)](https://github.com/wangsiyi7/NotebookLM-Fleet/actions/workflows/ci.yml)
 
@@ -18,7 +18,10 @@
 - **三通道智能路由 (`CapabilityRouter`)**
   - **Channel 1（Google 官方通道）**：直连 `notebook.googleapis.com/v1`、`/upload/v1`（最高支持 `200 MiB` 媒体文件上传）与 `notebook.googleapis.com/mcp`（7 工具 Streamable HTTP），含 OAuth Token 自动重试刷新与 302 浏览器直跳授权。
   - **Channel 2（全能增强协议）**：封装 `notebooklm-py >=0.8.6`，实时探测 **5 小时 / 周双窗口剩余百分比与 29 项动作消耗**，支持全部 **11 类 Studio 多模态产出**（音频播客、视频、电影级视频、PPT 幻灯片、信息图、思维导图、测验、闪卡、简报、学习指南、对比表 CSV）与可溯源 Chat 问答。
-  - **Channel 3（隔离 Chrome / Edge 无感登录）**：支持一键在前台弹出独立 Chrome 或 Microsoft Edge（`:9222+` 独立用户目录与端口），免关日常浏览器，后台每 2.5 秒自动静默捕获登录态并完成测额；同时兼容 **5 秒粘贴 `Copy as cURL`（自动识别 `notebook.google.com` 与 `?authuser=N`）**。
+  - **Channel 3（隔离 Chrome / Edge · CMD 脚本直连 · 长期持久续期 `v0.3.1`）**：
+    - 支持一键弹出独立 Chrome 或 Edge（`:9222+` 独立用户目录）并自动跳转到最新 Google `AccountChooser` 登录页，免关日常浏览器每 2.5 秒自动完成 CDP 捕获；
+    - 遇到隔离桌面或受限启动环境时**自动侦测并提示，绝不静默假装已弹窗**，提供 **一键激活 CMD 登录终端 / 下载双击 `.cmd` 脚本** 完成真实桌面登录；
+    - 完整保留 `accounts.google.com` `LSID` + 应用 `OSID` 持久标识，支持 **后台测额自动无感续期 + 卡片「♻️ 无感续期」**，避免短效 cURL 频繁掉线，并兼容 5 秒粘贴 `Copy as cURL`。
 - **额度感知分级调度 (`Tier-Aware Scheduler`)**
   - 支持 `conserve_ultra` / `ultra_first` / `balanced` 三种调度策略与安全水位保护；
   - 重负载高消耗任务自动优先匹配 Ultra；配额触顶自动降级进入 **`later=True` 官方延时队列** 或 **`waiting_quota` 重置唤醒状态机**；服务崩溃重启自动恢复 `'running'` 僵尸任务。
@@ -50,7 +53,7 @@ flowchart TB
     end
 
     subgraph Control["NotebookLM-Fleet 编排与控制平面"]
-        API["FastAPI 网关 (47 HTTP Ops)<br/>& 本机 Stdio MCP (10 Tools)"]
+        API["FastAPI 网关 (65+ HTTP Ops)<br/>& 本机 Stdio MCP (15 Tools)"]
         Sched["Quota Poller & Scheduler<br/>5h/周双窗 · 29动作 · later=True"]
         Router["CapabilityRouter & Coupling<br/>能走官方走官方 · 跨号共享/镜像"]
     end

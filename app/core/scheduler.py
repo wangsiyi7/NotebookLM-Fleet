@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 import random
+import weakref
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -516,8 +517,27 @@ async def _execute_single_task(
         )
 
 
+_SCHEDULER_LOCKS: weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, asyncio.Lock] = (
+    weakref.WeakKeyDictionary()
+)
+
+
+def _get_scheduler_lock() -> asyncio.Lock:
+    loop = asyncio.get_running_loop()
+    lock = _SCHEDULER_LOCKS.get(loop)
+    if lock is None:
+        lock = asyncio.Lock()
+        _SCHEDULER_LOCKS[loop] = lock
+    return lock
+
+
 async def run_scheduler_tick(*, db_path: Path | None = None) -> int:
     """Inspect pending/waiting tasks and dispatch eligible work across idle accounts."""
+    async with _get_scheduler_lock():
+        return await _run_scheduler_tick_locked(db_path=db_path)
+
+
+async def _run_scheduler_tick_locked(*, db_path: Path | None = None) -> int:
     now_utc = datetime.now(timezone.utc)
     tasks = await fetch_all(
         """

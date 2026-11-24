@@ -841,6 +841,7 @@ async def generate_for_notebook(notebook_id: int, body: NotebookGenerateRequest)
         payload: dict[str, Any] = {
             "remote_notebook_id": nb_row["remote_notebook_id"],
             "language": lang,
+            "strict_account": True,
         }
         if body.instructions:
             payload["instructions"] = body.instructions

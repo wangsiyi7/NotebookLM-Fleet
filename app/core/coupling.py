@@ -57,37 +57,55 @@ async def ensure_topic_notebook_for_account(
         and coupling_mode in ("shared", "shared_with_drive_fallback")
         and master_nb is not None
     ):
+        worker_email = (worker_account.get("email") or "").strip()
+        is_placeholder_email = (
+            not worker_email
+            or "@" not in worker_email
+            or worker_email.lower().endswith((".local", "@example.com"))
+        )
         master_acct = await fetch_one(
             "SELECT * FROM accounts WHERE id = ?",
             (master_nb["account_id"],),
             db_path=db_path,
         )
-        if master_acct and master_acct.get("nlm_auth_status") == "ok":
+        if not is_placeholder_email and master_acct and master_acct.get("nlm_auth_status") == "ok":
             shared_emails: list[str] = []
             try:
                 shared_emails = json.loads(master_nb.get("shared_emails_json") or "[]")
             except json.JSONDecodeError:
                 shared_emails = []
 
-            if worker_account["email"] not in shared_emails:
-                await router.share_editor(
-                    master_acct,
-                    master_nb["remote_notebook_id"],
-                    worker_account["email"],
-                    notify=False,
-                )
-                shared_emails.append(worker_account["email"])
-                await execute(
-                    """
-                    UPDATE notebooks
-                       SET shared_emails_json = ?,
-                           synced_at = datetime('now', 'localtime')
-                     WHERE id = ?
-                    """,
-                    (json.dumps(shared_emails, ensure_ascii=False), master_nb["id"]),
-                    db_path=db_path,
-                )
-            return master_nb, master_nb["remote_notebook_id"], True
+            if worker_email not in shared_emails:
+                try:
+                    await router.share_editor(
+                        master_acct,
+                        master_nb["remote_notebook_id"],
+                        worker_email,
+                        notify=False,
+                    )
+                    shared_emails.append(worker_email)
+                    await execute(
+                        """
+                        UPDATE notebooks
+                           SET shared_emails_json = ?,
+                               synced_at = datetime('now', 'localtime')
+                         WHERE id = ?
+                        """,
+                        (json.dumps(shared_emails, ensure_ascii=False), master_nb["id"]),
+                        db_path=db_path,
+                    )
+                    return master_nb, master_nb["remote_notebook_id"], True
+                except Exception as exc:  # noqa: BLE001
+                    if coupling_mode != "shared_with_drive_fallback":
+                        raise
+                    logger.warning(
+                        "share_editor failed for %s -> %s, falling back to Drive mirror: %s",
+                        master_acct.get("alias"),
+                        worker_email,
+                        exc,
+                    )
+            else:
+                return master_nb, master_nb["remote_notebook_id"], True
 
     # 3. Create a dedicated/mirror notebook on worker_account and populate from topic Sources/.
     is_master = 1 if master_nb is None else 0

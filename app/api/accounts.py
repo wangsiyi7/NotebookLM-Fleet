@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
+from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
 from notebooklm.auth import MINIMUM_REQUIRED_COOKIES
 from pydantic import BaseModel, Field
 
@@ -26,6 +28,7 @@ from ..db import (
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/accounts", tags=["accounts"])
+_BG_OAUTH_TASKS: set[asyncio.Task[Any]] = set()
 
 
 class AccountCreate(BaseModel):
@@ -75,6 +78,19 @@ async def list_accounts() -> dict[str, Any]:
     for acct in accounts:
         local = nlm_py_adapter.check_local_auth(acct["nlm_profile"])
         acct["local_cookie_exists"] = local["exists"]
+        acct["has_lsid"] = bool(local.get("has_lsid"))
+        acct["has_osid"] = bool(local.get("has_osid"))
+        acct["persistence_level"] = local.get("persistence_level", "none")
+        profile_dir = (acct.get("chrome_profile_dir") or "").strip()
+        has_browser_prof = False
+        if profile_dir:
+            chrome_dir = browser_takeover.resolve_browser_profile_dir(profile_dir, "chrome")
+            edge_dir = browser_takeover.resolve_browser_profile_dir(profile_dir, "edge")
+            has_browser_prof = (
+                browser_takeover._profile_has_cookies(chrome_dir)
+                or browser_takeover._profile_has_cookies(edge_dir)
+            )
+        acct["has_browser_profile"] = has_browser_prof
         acct["oauth_status_live"] = official_api.check_oauth_status(acct["alias"])
     return {
         "accounts": accounts,
@@ -198,7 +214,9 @@ async def _launch_oauth_session(acct: dict[str, Any]) -> tuple[str, int]:
                 (account_id,),
             )
 
-    asyncio.create_task(_run_and_save())
+    task = asyncio.create_task(_run_and_save())
+    _BG_OAUTH_TASKS.add(task)
+    task.add_done_callback(_BG_OAUTH_TASKS.discard)
     return auth_url, port
 
 
@@ -239,20 +257,153 @@ async def oauth_account_redirect(account_id: int) -> Any:
     return RedirectResponse(url=auth_url, status_code=302, headers={"Cache-Control": "no-store"})
 
 
+async def _ensure_cdp_port(acct: dict[str, Any]) -> int:
+    if acct.get("cdp_port"):
+        return int(acct["cdp_port"])
+    port = await next_cdp_port()
+    await execute("UPDATE accounts SET cdp_port = ? WHERE id = ?", (port, int(acct["id"])))
+    return port
+
+
 @router.post("/{account_id}/open-browser")
-async def open_account_chrome(account_id: int, body: OpenBrowserRequest | None = None) -> dict[str, Any]:
+async def open_account_chrome(
+    account_id: int,
+    request: Request,
+    body: OpenBrowserRequest | None = None,
+) -> dict[str, Any]:
     acct = await fetch_one("SELECT * FROM accounts WHERE id = ?", (account_id,))
     if acct is None:
         raise HTTPException(status_code=404, detail="账号不存在")
-    url = body.url if body else "https://notebook.google.com/"
+    raw_url = body.url if body else "https://notebook.google.com/"
     browser = body.browser if body else "chrome"
-    cdp_port = int(acct.get("cdp_port") or await next_cdp_port())
+    cdp_port = await _ensure_cdp_port(acct)
     try:
-        return browser_takeover.open_account_browser(
-            acct["alias"], acct["chrome_profile_dir"], cdp_port, url=url, browser=browser
+        login_url = browser_takeover.build_google_login_url(acct.get("email"), raw_url)
+        res = await asyncio.to_thread(
+            browser_takeover.open_account_browser,
+            acct["alias"],
+            acct["chrome_profile_dir"],
+            cdp_port,
+            url=login_url,
+            browser=browser,
         )
-    except FileNotFoundError as exc:
+        res["script_download_url"] = (
+            f"/api/accounts/{account_id}/login-script.cmd?browser={res['browser']}"
+        )
+        return res
+    except (ValueError, FileNotFoundError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/{account_id}/launch-cmd-login")
+async def launch_account_cmd_login(
+    account_id: int,
+    request: Request,
+    body: OpenBrowserRequest | None = None,
+) -> dict[str, Any]:
+    """Open an interactive Windows CMD + Chrome/Edge login terminal (or generate a 1-click script on isolated desktop)."""
+    acct = await fetch_one("SELECT * FROM accounts WHERE id = ?", (account_id,))
+    if acct is None:
+        raise HTTPException(status_code=404, detail="账号不存在")
+    raw_url = body.url if body else "https://notebook.google.com/"
+    browser = body.browser if body else "chrome"
+    cdp_port = await _ensure_cdp_port(acct)
+    try:
+        login_url = browser_takeover.build_google_login_url(acct.get("email"), raw_url)
+        capture_url = str(request.base_url).rstrip("/") + f"/api/accounts/{account_id}/capture-cdp"
+        res = await asyncio.to_thread(
+            browser_takeover.launch_cmd_login_console,
+            alias=acct["alias"],
+            chrome_profile_dir=acct["chrome_profile_dir"],
+            cdp_port=cdp_port,
+            url=login_url,
+            browser=browser,
+            api_capture_url=capture_url,
+        )
+        res["script_download_url"] = (
+            f"/api/accounts/{account_id}/login-script.cmd?browser={res['browser']}"
+        )
+        return res
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/{account_id}/login-script.cmd")
+async def download_account_login_script(
+    account_id: int,
+    request: Request,
+    browser: str = Query(default="chrome", pattern="^(chrome|edge|auto)$"),
+    url: str = Query(default="https://notebook.google.com/"),
+) -> PlainTextResponse:
+    """Download a self-contained Windows .cmd login script that runs directly on WinSta0\\Default."""
+    acct = await fetch_one("SELECT * FROM accounts WHERE id = ?", (account_id,))
+    if acct is None:
+        raise HTTPException(status_code=404, detail="账号不存在")
+    cdp_port = await _ensure_cdp_port(acct)
+    try:
+        login_url = browser_takeover.build_google_login_url(acct.get("email"), url)
+        capture_url = str(request.base_url).rstrip("/") + f"/api/accounts/{account_id}/capture-cdp"
+        script = await asyncio.to_thread(
+            browser_takeover.generate_windows_login_cmd_script,
+            alias=acct["alias"],
+            chrome_profile_dir=acct["chrome_profile_dir"],
+            cdp_port=cdp_port,
+            url=login_url,
+            browser=browser,
+            api_capture_url=capture_url,
+        )
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    safe_alias = re.sub(r"[^A-Za-z0-9._-]+", "_", acct["alias"]).strip("_") or f"account_{account_id}"
+    return PlainTextResponse(
+        content=script,
+        media_type="application/octet-stream; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="login_{safe_alias}.cmd"'},
+    )
+
+
+@router.post("/{account_id}/refresh-session")
+async def refresh_account_session(account_id: int) -> dict[str, Any]:
+    """Silently renew short-lived NotebookLM tokens using the account's persistent Chrome/Edge profile."""
+    acct = await fetch_one("SELECT * FROM accounts WHERE id = ?", (account_id,))
+    if acct is None:
+        raise HTTPException(status_code=404, detail="账号不存在")
+    res = await browser_takeover.silent_refresh_cookies_from_profile(
+        acct["chrome_profile_dir"],
+        cdp_port=acct.get("cdp_port"),
+        target_url="https://notebook.google.com/",
+    )
+    cookies = res.get("cookies") or []
+    if not res.get("refreshed") or not cookies:
+        return {
+            "ok": False,
+            "refreshed": False,
+            "reason": res.get("reason") or "no_browser_profile",
+            "detail": "未能从独立 Chrome/Edge 配置目录静默续期（可能尚未通过独立窗口登录，或 Google 账号需要重新输入密码）。",
+        }
+    try:
+        saved = nlm_py_adapter.import_cookies_into_profile(
+            acct["nlm_profile"],
+            cookies,
+            email=acct["email"],
+            authuser=0,
+        )
+    except ValueError as exc:
+        return {
+            "ok": False,
+            "refreshed": False,
+            "reason": "login_required",
+            "final_url": res.get("final_url"),
+            "detail": f"独立浏览器内的 Google 会话已失效，需要重新登录: {exc}",
+        }
+    quota = await poll_one_account(account_id, auto_refresh=False)
+    return {
+        "ok": quota.get("nlm_auth_status") == "ok",
+        "refreshed": True,
+        "source": res.get("source"),
+        "saved": saved,
+        "quota": quota,
+    }
 
 
 @router.post("/{account_id}/poll-quota")
@@ -291,14 +442,15 @@ async def capture_cdp_session(account_id: int, silent: bool = False) -> dict[str
                 for c in raw_cookies
                 if isinstance(c, dict) and str(c.get("value") or "").strip()
             )
-            if (set(MINIMUM_REQUIRED_COOKIES) - names) or not has_app_osid:
+            has_lsid_binding = {"LSID", "APISID", "SAPISID"} <= names
+            if (set(MINIMUM_REQUIRED_COOKIES) - names) or (not has_app_osid and not has_lsid_binding):
                 return {
                     "ok": False,
                     "waiting": True,
                     "detail": "等待在弹出的浏览器窗口中登录 Google 并进入 notebook.google.com 主页…",
                 }
         saved = nlm_py_adapter.import_cookies_into_profile(
-            acct["nlm_profile"], raw_cookies, email=acct["email"]
+            acct["nlm_profile"], raw_cookies, email=acct["email"], authuser=0
         )
     except (RuntimeError, ValueError) as exc:
         if silent:
@@ -355,7 +507,7 @@ async def import_browser_cookies(account_id: int) -> dict[str, Any]:
         try:
             raw_cookies = await browser_takeover.capture_cdp_cookies(cdp_port)
             saved = nlm_py_adapter.import_cookies_into_profile(
-                acct["nlm_profile"], raw_cookies, email=acct["email"]
+                acct["nlm_profile"], raw_cookies, email=acct["email"], authuser=0
             )
         except (RuntimeError, ValueError) as exc:
             return {

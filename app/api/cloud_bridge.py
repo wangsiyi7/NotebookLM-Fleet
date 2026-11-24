@@ -5,16 +5,18 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
-from ..adapters import baidupan_adapter
+from ..adapters import baidupan_adapter, browser_takeover
 from ..adapters.baidupan_adapter import (
     BAIDU_CDP_PORT,
     BaiduPanError,
     auth_manager,
     baidu_client,
 )
+from ..config import get_chrome_profile_dir
 from ..core.cloud_bridge import cloud_bridge_engine, list_gdrive_bridge_dir
 from ..core.win_runtime import detect_google_drive_mounts
 from ..db import get_settings_map
@@ -84,12 +86,65 @@ async def get_bridge_status(live_check: bool = Query(default=True)) -> dict[str,
 
 
 @router.post("/auth/open-browser")
-async def open_baidu_browser(body: BaiduOpenBrowserRequest | None = None) -> dict[str, Any]:
+async def open_baidu_browser(
+    request: Request,
+    body: BaiduOpenBrowserRequest | None = None,
+) -> dict[str, Any]:
     req = body or BaiduOpenBrowserRequest()
     try:
-        return await asyncio.to_thread(baidupan_adapter.open_baidu_login_browser, req.browser)
+        res = await asyncio.to_thread(baidupan_adapter.open_baidu_login_browser, req.browser)
+        res["script_download_url"] = f"/api/bridge/auth/login-script.cmd?browser={res['browser']}"
+        return res
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/auth/launch-cmd-login")
+async def launch_baidu_cmd_login(
+    request: Request,
+    body: BaiduOpenBrowserRequest | None = None,
+) -> dict[str, Any]:
+    req = body or BaiduOpenBrowserRequest()
+    try:
+        capture_url = str(request.base_url).rstrip("/") + "/api/bridge/auth/sync-cdp"
+        res = await asyncio.to_thread(
+            browser_takeover.launch_cmd_login_console,
+            alias="baidupan",
+            chrome_profile_dir=get_chrome_profile_dir("baidupan_bridge"),
+            cdp_port=BAIDU_CDP_PORT,
+            url="https://pan.baidu.com/disk/main",
+            browser=req.browser,
+            api_capture_url=capture_url,
+        )
+        res["script_download_url"] = f"/api/bridge/auth/login-script.cmd?browser={res['browser']}"
+        return res
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/auth/login-script.cmd")
+async def download_baidu_login_script(
+    request: Request,
+    browser: str = Query(default="chrome", pattern="^(chrome|edge|auto)$"),
+) -> PlainTextResponse:
+    try:
+        capture_url = str(request.base_url).rstrip("/") + "/api/bridge/auth/sync-cdp"
+        script = await asyncio.to_thread(
+            browser_takeover.generate_windows_login_cmd_script,
+            alias="baidupan",
+            chrome_profile_dir=get_chrome_profile_dir("baidupan_bridge"),
+            cdp_port=BAIDU_CDP_PORT,
+            url="https://pan.baidu.com/disk/main",
+            browser=browser,
+            api_capture_url=capture_url,
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return PlainTextResponse(
+        content=script,
+        media_type="application/octet-stream; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="login_baidupan.cmd"'},
+    )
 
 
 @router.post("/auth/sync-cdp")

@@ -320,6 +320,8 @@ tbody tr:hover{background:#fbfaf6}
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="btn primary sm" onclick="openBaiduBrowserLogin('chrome')">🚀 Chrome 扫码登录</button>
             <button class="btn sm" onclick="openBaiduBrowserLogin('edge')">🌐 Edge 扫码登录</button>
+            <button class="btn sm" onclick="launchBaiduCmdLogin('chrome')">🖥️ CMD 扫码</button>
+            <a class="btn sm" href="/api/bridge/auth/login-script.cmd?browser=chrome" download style="text-decoration:none">📥 下载 CMD 脚本</a>
             <button class="btn sm" onclick="syncBaiduCdp()">⚡ 同步浏览器登录态</button>
             <button class="btn sm" onclick="openBaiduCookieModal()">📋 粘贴 cURL/Cookie</button>
             <button class="btn sm" onclick="logoutBaidu()">退出百度账号</button>
@@ -791,6 +793,10 @@ const OFFICIAL_TOOL_TEMPLATES = {
 
 function $(s){ return document.querySelector(s); }
 function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function safeHttpUrl(u){
+  const s = String(u || "").trim();
+  return (s.startsWith("https://") || s.startsWith("http://")) ? s : "";
+}
 function toast(msg, isErr=false){
   const el = $("#toast");
   el.textContent = msg;
@@ -1107,6 +1113,14 @@ function renderDashboard(){
       return `<span class="${cls}">${label}: ${cost}${x.remaining_deferred_artifact_generations ? " · 延时"+x.remaining_deferred_artifact_generations : ""}</span>`;
     }).join("");
 
+    const persistPill = a.nlm_auth_status === "ok"
+      ? (a.persistence_level === "long_term"
+          ? '<span class="pill p-green" title="已保存 accounts.google.com LSID 与独立浏览器配置档案，支持长期无感续期">🔒 长期持久</span>'
+          : '<span class="pill p-amber" title="当前为临时 cURL 会话（缺少 LSID）；建议用 CMD / 独立浏览器登录一次获取长期持久">⏱️ 临时cURL</span>')
+      : (a.has_browser_profile
+          ? '<span class="pill p-blue" title="检测到已登录过的独立浏览器配置档案，可尝试无感续期">💾 有本地档案</span>'
+          : "");
+
     return `<div class="acct-card ${a.enabled ? "" : "disabled"}">
       <div class="acct-head">
         <div>
@@ -1118,7 +1132,7 @@ function renderDashboard(){
           <div class="acct-email">${esc(a.email)}</div>
         </div>
         <div style="text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end">
-          <div>Ch2 ${authPill(a.nlm_auth_status)}</div>
+          <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;justify-content:flex-end">Ch2 ${authPill(a.nlm_auth_status)} ${persistPill}</div>
           <div>Ch1 ${authPill(a.oauth_status_live || a.official_oauth_status)}</div>
         </div>
       </div>
@@ -1143,7 +1157,8 @@ function renderDashboard(){
 
       <div class="card-actions">
         <button class="btn primary sm" onclick="openCh2LoginModal(${a.id})">一键登录会话</button>
-        <button class="btn sm" onclick="importChromeCookies(${a.id})">提取Chrome Cookie</button>
+        <button class="btn sm" onclick="launchCh2CmdLogin(${a.id}, 'chrome')">🖥️ CMD登录</button>
+        <button class="btn sm" onclick="refreshSession(${a.id}, this)">♻️ 无感续期</button>
         <button class="btn sm" onclick="pollOne(${a.id})">测额</button>
         <button class="btn sm" onclick="openChrome(${a.id})">弹出专属Chrome</button>
         <button class="btn sm" onclick="oauthOfficial(${a.id})">官方API授权</button>
@@ -1562,18 +1577,37 @@ async function pollAll(){
 }
 function openCh2LoginModal(id){
   const a = STATE.accounts.find(x => x.id === id) || { id, alias: "账号#" + id, email: "", cdp_port: 9222 };
+  const isolated = Boolean(STATE.sys && STATE.sys.interactive_desktop === false);
+  const isoBanner = isolated ? `
+    <div class="card-box" style="margin-bottom:10px;border-color:#d9a441;background:#fff8eb">
+      <div style="font-weight:700;color:var(--amber);margin-bottom:4px">⚠️ 当前后台服务运行在隔离桌面（${esc((STATE.sys && STATE.sys.desktop_name) || "isolated")}）</div>
+      <div class="hint">在此隔离环境下，直接点击“弹出浏览器”窗口不会显示在您的桌面上！请点击下方 <b>「📥 下载一键 CMD 登录脚本」</b> 并双击运行，系统会在您的真实桌面打开 CMD + 浏览器直达最新 Google 登录页并自动持久回写 Cookie。</div>
+    </div>` : "";
+  const persistNote = a.persistence_level === "long_term"
+    ? '<span class="pill p-green">🔒 当前已持久保存 LSID + 独立档案</span>'
+    : (a.has_browser_profile
+        ? '<span class="pill p-blue">💾 已有独立浏览器档案，可点无感续期</span>'
+        : '<span class="pill p-amber">⏱️ 建议使用独立窗口/CMD 登录以持久化 LSID</span>');
+
   showModal(`<h3>🔐 登录 Channel 2 会话（实时测额 / 生成 Studio / Chat）· ${esc(a.alias)}</h3>
-    <div class="hint" style="margin-bottom:10px">
-      目标账号：<b class="mono">${esc(a.email)}</b> · 免关日常浏览器，点击下方按钮立即在前台弹出独立窗口并自动同步会话：
+    <div class="hint" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+      <span>目标账号：<b class="mono">${esc(a.email)}</b></span>
+      ${persistNote}
     </div>
+    ${isoBanner}
     <div class="card-box" style="margin-bottom:10px;background:#faf8f3">
-      <div style="font-weight:700;margin-bottom:6px">方式一（一键弹出浏览器 · 自动检测登录完成并测额）</div>
-      <div class="hint" style="margin-bottom:8px">点击用 Chrome 或 Edge 前台打开 <span class="mono">https://notebook.google.com/</span> 隔离窗口，登录目标账号进入主页后系统每 2.5 秒自动完成同步（无需回点）：</div>
+      <div style="font-weight:700;margin-bottom:6px">方式一（长期持久 · 独立 Chrome/Edge 或 CMD 终端跳转到最新 Google 登录页）</div>
+      <div class="hint" style="margin-bottom:8px">登录目标账号进入 <span class="mono">notebook.google.com</span> 主页后，系统自动保存完整多域 Cookie (<span class="mono">LSID + OSID</span>) 到独立配置目录以长期维持登录态：</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn primary" onclick="launchCh2Browser(${a.id}, 'chrome')">🚀 用 Chrome 打开登录页 (:${esc(a.cdp_port || 9222)})</button>
-        <button class="btn primary" style="background:#0f5c8f;border-color:#0f5c8f" onclick="launchCh2Browser(${a.id}, 'edge')">🌐 用 Edge 打开登录页 (:${esc(a.cdp_port || 9222)})</button>
-        <button class="btn" id="btnCaptureCdp" onclick="captureCdpSession(${a.id})">⚡ 手动立即同步并测额</button>
+        <button class="btn primary" onclick="launchCh2Browser(${a.id}, 'chrome')">🚀 Chrome 打开最新登录页 (:${esc(a.cdp_port || 9222)})</button>
+        <button class="btn primary" style="background:#0f5c8f;border-color:#0f5c8f" onclick="launchCh2Browser(${a.id}, 'edge')">🌐 Edge 打开最新登录页 (:${esc(a.cdp_port || 9222)})</button>
+        <button class="btn" onclick="launchCh2CmdLogin(${a.id}, 'chrome')">🖥️ 激活 CMD 终端登录</button>
+        <a class="btn" href="/api/accounts/${a.id}/login-script.cmd?browser=chrome" download style="text-decoration:none">📥 下载 CMD 脚本 (Chrome)</a>
+        <a class="btn" href="/api/accounts/${a.id}/login-script.cmd?browser=edge" download style="text-decoration:none">📥 下载 CMD 脚本 (Edge)</a>
+        <button class="btn" id="btnCaptureCdp" onclick="captureCdpSession(${a.id})">⚡ 手动同步并测额</button>
+        <button class="btn" onclick="refreshSession(${a.id}, this)">♻️ 无感续期</button>
       </div>
+      <div id="ch2ManualCmdBox" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)"></div>
     </div>
     <div class="card-box" style="margin-bottom:10px">
       <div style="font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
@@ -1581,7 +1615,7 @@ function openCh2LoginModal(id){
         <a class="btn sm" href="https://notebook.google.com/" target="_blank" rel="noopener">🔗 在当前浏览器打开 notebook.google.com</a>
       </div>
       <div class="hint" style="margin-bottom:6px">
-        在已登录的浏览器打开上面链接，按 <b class="mono">F12</b> → 切到 <b class="mono">Network</b> → 刷新一次 → 右键第一条 <span class="mono">notebook.google.com</span> 请求选 <b>Copy → Copy as cURL (bash)</b> 粘贴到下面：
+        在已登录的浏览器打开上面链接，按 <b class="mono">F12</b> → 切到 <b class="mono">Network</b> → 刷新一次 → 右键第一条 <span class="mono">notebook.google.com</span> 请求选 <b>Copy → Copy as cURL (bash)</b> 粘贴到下面（注意：cURL 导入缺少 LSID，推荐偶发失效后改用方式一持久化）：
       </div>
       <div class="form-grid">
         <label class="full">
@@ -1604,53 +1638,134 @@ function openCh2LoginModal(id){
       <button class="btn" onclick="closeModal()">关闭</button>
     </div>`);
 }
+function _renderCh2FallbackBox(r, label){
+  const box = $("#ch2ManualCmdBox");
+  if(!box) return;
+  box.style.display = "block";
+  const dlUrl = r.script_download_url || `/api/accounts/${r.id || 1}/login-script.cmd`;
+  box.innerHTML = `<div class="hint" style="margin-bottom:6px;color:var(--ink)">
+      <b>请在您的 Windows 桌面执行以下任一步骤（窗口将真正在桌面弹出）：</b>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
+      <a class="btn primary sm" href="${esc(dlUrl)}" download style="text-decoration:none">📥 下载 login_${esc(r.alias || "account")}.cmd 并双击运行</a>
+      <span class="hint">或在 Win+R / CMD 中粘贴下方命令：</span>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <input type="text" class="mono" readonly value="${esc(r.manual_cmd || "")}" style="flex:1;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;font-size:11.5px" onclick="this.select()">
+      <button class="btn sm" type="button" onclick="copyTextValue(decodeURIComponent('${encodeURIComponent(r.manual_cmd || "")}'))">📋 复制命令</button>
+    </div>`;
+}
+async function copyTextValue(txt){
+  try{
+    await navigator.clipboard.writeText(txt);
+    toast("已复制到剪贴板，可直接粘贴到 Windows CMD 运行");
+  }catch(_){ toast("请手动全选文本框内容复制", true); }
+}
+function _startCh2CdpPoller(id, usedLabel){
+  if(window._ch2PollTimer){ clearInterval(window._ch2PollTimer); window._ch2PollTimer = null; }
+  const st = $("#ch2LoginStatus");
+  let busy = false;
+  window._ch2PollTimer = setInterval(async () => {
+    if(busy) return;
+    busy = true;
+    try{
+      const res = await api(`/api/accounts/${id}/capture-cdp?silent=true`, {method: "POST"});
+      if(res.ok){
+        clearInterval(window._ch2PollTimer);
+        window._ch2PollTimer = null;
+        await refreshAll();
+        const q = res.quota || {};
+        closeModal();
+        toast(`🎉 ${usedLabel} 同步成功！5h剩余 ${q.five_hour_remaining_pct != null ? Number(q.five_hour_remaining_pct).toFixed(1) + "%" : "OK"}`);
+      }else if(res.waiting === false){
+        clearInterval(window._ch2PollTimer);
+        window._ch2PollTimer = null;
+        const errTxt = (res.quota && res.quota.error_msg) || res.detail || "捕获到会话但测额失败，请确认登录的是对应邮箱账号";
+        if(st){ st.style.color = "var(--red)"; st.textContent = "❌ " + errTxt; }
+        toast(errTxt, true);
+      }
+    }catch(_){
+      // Waiting for browser / CMD script to come online on CDP port.
+    }finally{
+      busy = false;
+    }
+  }, 2500);
+}
 async function launchCh2Browser(id, browser="chrome"){
   if(window._ch2PollTimer){ clearInterval(window._ch2PollTimer); window._ch2PollTimer = null; }
   const acct = STATE.accounts.find(x => x.id === id) || { email: "", cdp_port: 9222 };
   const label = browser === "edge" ? "Edge" : "Chrome";
   const st = $("#ch2LoginStatus");
-  if(st){ st.style.color = "var(--accent)"; st.textContent = `⏳ 正在前台启动专属 ${label} (:${acct.cdp_port || 9222})…`; }
+  if(st){ st.style.color = "var(--accent)"; st.textContent = `⏳ 正在检测桌面环境并启动专属 ${label} (:${acct.cdp_port || 9222})…`; }
   try{
     const r = await api(`/api/accounts/${id}/open-browser`, {
       method: "POST",
       body: JSON.stringify({url: "https://notebook.google.com/", browser})
     });
     const usedLabel = r.browser === "edge" ? "Edge" : "Chrome";
+    if(r.desktop_isolated && !r.already_running){
+      _renderCh2FallbackBox(r, usedLabel);
+      if(st){ st.style.color = "var(--amber)"; st.textContent = "⚠️ " + (r.message || "当前为隔离桌面环境，请下载并双击 CMD 脚本在真实桌面打开登录窗口；本页正在后台自动等待同步…"); }
+      toast("隔离桌面下请点击「下载 CMD 脚本」双击运行", true);
+      _startCh2CdpPoller(id, usedLabel);
+      return;
+    }
+    if(!r.cdp_ready){
+      _renderCh2FallbackBox(r, usedLabel);
+      if(st){ st.style.color = "var(--amber)"; st.textContent = "⚠️ " + (r.message || `未检测到 CDP 端口 :${r.cdp_port}，建议改用「下载 CMD 脚本」直接启动`); }
+      toast("未检测到调试端口响应，请查看弹窗内的 CMD fallback 方案", true);
+      _startCh2CdpPoller(id, usedLabel);
+      return;
+    }
     if(st){
       st.style.color = "var(--accent)";
-      st.textContent = `⏳ 已在前台弹出 ${usedLabel} 登录窗口 (:${r.cdp_port})，请登录 ${acct.email || "目标账号"} 并进入 notebook.google.com 主页；登录完成后将自动捕获会话并测额（每 2.5 秒自动检测）…`;
+      st.textContent = `⏳ 已弹出 ${usedLabel} 登录窗口 (:${r.cdp_port}) 并跳转到 Google 登录页，请登录 ${acct.email || "目标账号"} 进入主页；每 2.5 秒自动检测同步…`;
     }
-    toast(`已打开专属 ${usedLabel} 窗口，登录后将自动完成同步`);
-
-    let busy = false;
-    window._ch2PollTimer = setInterval(async () => {
-      if(busy) return;
-      busy = true;
-      try{
-        const res = await api(`/api/accounts/${id}/capture-cdp?silent=true`, {method: "POST"});
-        if(res.ok){
-          clearInterval(window._ch2PollTimer);
-          window._ch2PollTimer = null;
-          await refreshAll();
-          const q = res.quota || {};
-          closeModal();
-          toast(`🎉 ${usedLabel} 自动同步成功！5h剩余 ${q.five_hour_remaining_pct != null ? Number(q.five_hour_remaining_pct).toFixed(1) + "%" : "OK"}`);
-        }else if(res.waiting === false){
-          clearInterval(window._ch2PollTimer);
-          window._ch2PollTimer = null;
-          const errTxt = (res.quota && res.quota.error_msg) || res.detail || "捕获到会话但测额失败，请确认登录的是对应邮箱账号";
-          if(st){ st.style.color = "var(--red)"; st.textContent = "❌ " + errTxt; }
-          toast(errTxt, true);
-        }
-      }catch(_){
-        // Transient polling error while browser initializes — ignore until next tick.
-      }finally{
-        busy = false;
-      }
-    }, 2500);
+    toast(`已打开专属 ${usedLabel} 窗口，登录后将自动同步持久 Cookie`);
+    _startCh2CdpPoller(id, usedLabel);
   }catch(e){
     if(st){ st.style.color = "var(--red)"; st.textContent = "❌ " + e.message; }
     toast(e.message, true);
+  }
+}
+async function launchCh2CmdLogin(id, browser="chrome"){
+  if(!$("#ch2LoginStatus")) openCh2LoginModal(id);
+  const st = $("#ch2LoginStatus");
+  if(st){ st.style.color = "var(--accent)"; st.textContent = "⏳ 正在准备 CMD 交互式登录终端…"; }
+  try{
+    const r = await api(`/api/accounts/${id}/launch-cmd-login`, {
+      method: "POST",
+      body: JSON.stringify({url: "https://notebook.google.com/", browser})
+    });
+    const usedLabel = r.browser === "edge" ? "Edge" : "Chrome";
+    _renderCh2FallbackBox(r, usedLabel);
+    if(r.launched){
+      if(st){ st.style.color = "var(--accent)"; st.textContent = "✅ 已打开桌面 CMD 登录终端！在弹出浏览器完成 Google 登录后，回 CMD 按任意键或等待本页自动完成同步。"; }
+      toast("已启动 CMD 登录终端");
+    }else{
+      if(st){ st.style.color = "var(--amber)"; st.textContent = "⚠️ " + (r.message || "隔离桌面下请点击上方按钮下载 .cmd 文件并双击运行；本页会自动监听同步结果。"); }
+      toast("请点击弹窗内「下载 .cmd 并双击运行」", true);
+    }
+    _startCh2CdpPoller(id, usedLabel);
+  }catch(e){
+    if(st){ st.style.color = "var(--red)"; st.textContent = "❌ " + e.message; }
+    toast(e.message, true);
+  }
+}
+async function refreshSession(id, btn=null){
+  const prevText = btn ? btn.textContent : "";
+  if(btn){ btn.disabled = true; btn.textContent = "续期中…"; }
+  try{
+    const r = await api(`/api/accounts/${id}/refresh-session`, {method: "POST"});
+    if(r.ok){
+      await refreshAll();
+      toast(`♻️ 无感续期成功 (${r.source || "profile"})，会话状态保持活跃`);
+    }else{
+      toast(r.detail || "未能无感续期，请点击「一键登录会话」重新登录一次", true);
+    }
+  }catch(e){ toast(e.message, true); }
+  finally{
+    if(btn){ btn.disabled = false; btn.textContent = prevText; }
   }
 }
 async function captureCdpSession(id){
@@ -1779,9 +1894,17 @@ async function openChrome(id){
   try{
     const r = await api(`/api/accounts/${id}/open-browser`, {method:"POST", body:JSON.stringify({url:"https://notebook.google.com/", browser:"auto"})});
     const label = r.browser === "edge" ? "Edge" : "Chrome";
+    if((r.desktop_isolated && !r.already_running) || !r.cdp_ready){
+      openCh2LoginModal(id);
+      _renderCh2FallbackBox(r, label);
+      const st = $("#ch2LoginStatus");
+      if(st){ st.style.color = "var(--amber)"; st.textContent = "⚠️ " + (r.message || "未能在桌面弹出浏览器，请直接下载并运行 CMD 脚本"); }
+      toast("请使用弹窗内的「下载 CMD 脚本」完成登录", true);
+      return;
+    }
     const msg = r.already_running
       ? `已为专属 ${label} (CDP :${r.cdp_port}) 打开新窗口，请在对应浏览器登录 NotebookLM 后点击同步`
-      : `已在前台启动专属纯净 ${label} (CDP :${r.cdp_port})，请在弹出窗口登录 NotebookLM 后点击同步`;
+      : `已在桌面启动专属纯净 ${label} (CDP :${r.cdp_port})，请在弹出窗口登录 NotebookLM 后点击同步`;
     const st = $("#ch2LoginStatus");
     if(st){ st.style.color = "var(--accent)"; st.textContent = "✅ " + msg; }
     toast(msg);
@@ -1888,7 +2011,7 @@ function renderNotebooks(){
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <a class="btn primary sm" href="/notebooks/${nb.id}" onclick="return openNotebookSubpage(${nb.id}, decodeURIComponent('${encodeURIComponent(nb.title || "")}'))" style="text-decoration:none">📖 进入子网页</a>
           ${scanned ? `<button class="btn sm" onclick="refreshSingleNbStats(${nb.id}, this)">↻</button>` : ""}
-          ${nb.web_url ? `<a class="btn sm" href="${esc(nb.web_url)}" target="_blank" rel="noopener" style="text-decoration:none">↗ 原页</a>` : ""}
+          ${nb.web_url && safeHttpUrl(nb.web_url) ? `<a class="btn sm" href="${esc(safeHttpUrl(nb.web_url))}" target="_blank" rel="noopener" style="text-decoration:none">↗ 原页</a>` : ""}
         </div>
       </div>
     </div>`;
@@ -2302,11 +2425,46 @@ function renderBaiduNotLoggedIn(){
   $("#brBaiduBody").innerHTML = '<tr><td colspan="3" class="empty">请先在上方登录百度网盘后浏览云端文件</td></tr>';
 }
 
+function _showBaiduCmdFallbackModal(r, label){
+  const dlUrl = r.script_download_url || `/api/bridge/auth/login-script.cmd?browser=${encodeURIComponent(r.browser || "chrome")}`;
+  showModal(`<h3>☁️ 百度网盘桌面扫码登录 (${esc(label)})</h3>
+    <div class="hint" style="margin-bottom:10px;color:var(--amber)">
+      ⚠️ ${esc(r.message || "当前服务处于隔离桌面，直接拉起的浏览器无法在您的桌面显示。")}
+    </div>
+    <div class="card-box" style="margin-bottom:10px;background:#faf8f3">
+      <div style="font-weight:700;margin-bottom:6px">一步解决：在您的真实桌面打开独立 ${esc(label)} 扫码</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+        <a class="btn primary" href="${esc(dlUrl)}" download style="text-decoration:none">📥 下载 login_baidupan.cmd 并双击运行</a>
+        <button class="btn" onclick="syncBaiduCdp().then(()=>closeModal()).catch(()=>{})">⚡ 我已扫码登录，立即同步</button>
+      </div>
+      <div class="hint" style="margin-bottom:4px">或在 Windows CMD 中复制执行：</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="text" class="mono" readonly value="${esc(r.manual_cmd || "")}" style="flex:1;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;font-size:11.5px" onclick="this.select()">
+        <button class="btn sm" type="button" onclick="copyTextValue(decodeURIComponent('${encodeURIComponent(r.manual_cmd || "")}'))">📋 复制命令</button>
+      </div>
+    </div>
+    <div class="modal-actions"><button class="btn" onclick="closeModal()">关闭</button></div>`);
+}
 async function openBaiduBrowserLogin(browser="chrome"){
   try{
     const r = await api("/api/bridge/auth/open-browser", {method:"POST", body:JSON.stringify({browser})});
     const label = r.browser === "edge" ? "Edge" : "Chrome";
+    if((r.desktop_isolated && !r.already_running) || !r.cdp_ready){
+      _showBaiduCmdFallbackModal(r, label);
+      return;
+    }
     toast(`已打开专属 ${label} (:${r.cdp_port})，请在窗口扫码或登录 pan.baidu.com，完成后点击「同步浏览器登录态」`);
+  }catch(e){ toast(e.message, true); }
+}
+async function launchBaiduCmdLogin(browser="chrome"){
+  try{
+    const r = await api("/api/bridge/auth/launch-cmd-login", {method:"POST", body:JSON.stringify({browser})});
+    const label = r.browser === "edge" ? "Edge" : "Chrome";
+    if(r.launched){
+      toast(`已打开桌面 CMD + ${label} 登录终端，扫码后按 CMD 提示同步即可`);
+    }else{
+      _showBaiduCmdFallbackModal(r, label);
+    }
   }catch(e){ toast(e.message, true); }
 }
 
@@ -2607,9 +2765,9 @@ function renderBridgeJobs(){
       <td class="mono">${j.completed_files}/${j.skipped_files}/${j.failed_files} (共 ${j.total_files})</td>
       <td>${bridgeStatusPill(j.status)}</td>
       <td class="ops">
-        <button class="link" onclick="openBridgeJobModal('${esc(j.job_id)}')">详情</button>
-        ${active ? `<button class="link danger" onclick="cancelBridgeJob('${esc(j.job_id)}')">取消</button>` : ""}
-        ${canRetry ? `<button class="link" onclick="retryBridgeJob('${esc(j.job_id)}')">重试</button>` : ""}
+        <button class="link" onclick="openBridgeJobModal(decodeURIComponent('${encodeURIComponent(j.job_id || "")}'))">详情</button>
+        ${active ? `<button class="link danger" onclick="cancelBridgeJob(decodeURIComponent('${encodeURIComponent(j.job_id || "")}'))">取消</button>` : ""}
+        ${canRetry ? `<button class="link" onclick="retryBridgeJob(decodeURIComponent('${encodeURIComponent(j.job_id || "")}'))">重试</button>` : ""}
         ${j.direction === "baidu_to_gdrive" ? `<button class="link" onclick="revealPath(decodeURIComponent('${encTarget}'))">打开目录</button>` : ""}
       </td>
     </tr>`;

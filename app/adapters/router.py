@@ -69,7 +69,7 @@ class CapabilityRouter:
             try:
                 project_id = self.settings["official_api_project_id"].strip()
                 items = await self.official.list_notebooks(
-                    account["alias"], project_id, **self._proxy_kwargs()
+                    account["alias"], project_id, fetch_all=True, **self._proxy_kwargs()
                 )
                 return items, "official_api"
             except Exception as exc:  # noqa: BLE001

@@ -178,6 +178,16 @@ class DesktopController:
             )
             if win is not None:
                 self.child_windows.append(win)
+                try:
+                    def _on_child_closed(_win: Any = win) -> None:
+                        try:
+                            self.child_windows.remove(_win)
+                        except ValueError:
+                            pass
+
+                    win.events.closed += _on_child_closed
+                except Exception:  # noqa: BLE001
+                    pass
                 return True
         except Exception as exc:  # noqa: BLE001
             logger.warning("Failed to open child window %s: %s", path, exc)
@@ -319,7 +329,7 @@ def _start_tray_background(controller: DesktopController) -> bool:
         icon = pystray.Icon(
             "NotebookLM-Fleet",
             _load_tray_image(),
-            "NotebookLM-Fleet v0.3.0",
+            "NotebookLM-Fleet v0.3.1",
             menu,
         )
         controller.tray_icon = icon
@@ -399,7 +409,7 @@ def _run_desktop_gui(port: int | None) -> int:
         import webview
 
         main_win = webview.create_window(
-            title="NotebookLM-Fleet v0.3.0 · 多账号中控与云盘互通",
+            title="NotebookLM-Fleet v0.3.1 · 多账号中控与云盘互通",
             url=f"{base_url}/",
             width=1440,
             height=900,

@@ -10,7 +10,7 @@ Use the `notebooklm-fleet` MCP tools whenever the user wants to inspect Notebook
 ## Core Rules
 
 1. **Always check quota health first**: Call `fleet_quota_overview` (or `fleet_poll_quotas` if snapshots are stale or missing) before recommending manual assignment or explaining capacity.
-2. **Never ask the user for plaintext passwords**: If any account shows `unauthenticated` or `expired`, open the UI Ch2 login modal (1-click Chrome/Edge or 5-second cURL) or call `fleet_open_account_browser(alias, mode="chrome")` for isolated visual takeover.
+2. **Never ask the user for plaintext passwords**: If any account shows `unauthenticated` or `expired`, try `POST /api/accounts/{id}/refresh-session` (silent persistent-profile renewal) first, or guide the user via the UI Ch2 login modal (1-click Chrome/Edge, interactive Windows `.cmd` login script `/api/accounts/{id}/login-script.cmd` which captures long-term `LSID + OSID`, or 5-second cURL) or `fleet_open_account_browser(alias, mode="chrome")`.
 3. **Anchor everything to Topics & Drive Hub**:
    - Primary Drive Hub lives at the user's configured `DRIVE_HUB_ROOT` (typically `<DriveHub>/NLM_Hub`).
    - Prefer `fleet_create_topic_and_ingest` followed by `fleet_enqueue_batch` so the quota-aware scheduler distributes work across idle accounts according to `conserve_ultra` / `ultra_first` / `balanced` policies.

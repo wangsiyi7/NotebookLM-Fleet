@@ -100,6 +100,9 @@ def check_local_auth(profile_name: str) -> dict[str, Any]:
             "exists": False,
             "valid_json": False,
             "cookies_ok": False,
+            "has_lsid": False,
+            "has_osid": False,
+            "persistence_level": "none",
             "status": "unauthenticated",
             "storage_path": str(storage_path),
         }
@@ -110,25 +113,49 @@ def check_local_auth(profile_name: str) -> dict[str, Any]:
             "exists": True,
             "valid_json": False,
             "cookies_ok": False,
+            "has_lsid": False,
+            "has_osid": False,
+            "persistence_level": "none",
             "status": "error",
             "storage_path": str(storage_path),
         }
 
     cookies = data.get("cookies") if isinstance(data, dict) else None
     names: set[str] = set()
+    has_lsid = False
+    has_osid = False
+    lsid_domains = {"accounts.google.com", ".accounts.google.com"}
+    osid_domains = {
+        "notebook.google.com",
+        ".notebook.google.com",
+        "notebooklm.google.com",
+        ".notebooklm.google.com",
+    }
     if isinstance(cookies, list):
         for item in cookies:
             if not isinstance(item, dict):
                 continue
             cname = item.get("name")
             cval = item.get("value")
+            cdomain = str(item.get("domain") or "").strip().lower()
             if isinstance(cname, str) and cname.strip() and isinstance(cval, str) and cval.strip():
-                names.add(cname.strip())
+                clean_name = cname.strip()
+                names.add(clean_name)
+                if clean_name == "LSID" and cdomain in lsid_domains:
+                    has_lsid = True
+                if clean_name in {"OSID", "__Secure-OSID"} and cdomain in osid_domains:
+                    has_osid = True
     has_session_cookie = ("SID" in names) and bool(names & {"__Secure-1PSIDTS", "__Secure-1PSID"})
+    persistence_level = (
+        "none" if not has_session_cookie else ("long_term" if has_lsid else "short_term")
+    )
     return {
         "exists": True,
         "valid_json": True,
         "cookies_ok": has_session_cookie,
+        "has_lsid": has_lsid,
+        "has_osid": has_osid,
+        "persistence_level": persistence_level,
         "status": "ok" if has_session_cookie else "expired",
         "storage_path": str(storage_path),
     }
@@ -906,7 +933,25 @@ def import_cookies_into_profile(
             f"缺少关键 Google 认证 Cookie ({', '.join(sorted(missing))})。请先确认已在浏览器成功登录 https://notebook.google.com/ 并看到笔记本列表后再同步。"
         )
 
+    lsid_domains = {"accounts.google.com", ".accounts.google.com"}
+    osid_domains = {
+        "notebook.google.com",
+        ".notebook.google.com",
+        "notebooklm.google.com",
+        ".notebooklm.google.com",
+    }
+    has_lsid = any(
+        c["name"] == "LSID" and c["domain"].lower() in lsid_domains and c["value"]
+        for c in normalized
+    )
+    has_osid = any(
+        c["name"] in {"OSID", "__Secure-OSID"}
+        and c["domain"].lower() in osid_domains
+        and c["value"]
+        for c in normalized
+    )
     has_sec = _has_valid_secondary_binding(names)
+    persistence_level = "long_term" if has_lsid else "short_term"
     storage_path = get_storage_path(profile=profile_name)
     storage_path.parent.mkdir(parents=True, exist_ok=True)
     clean_email = (email or "").strip() or None
@@ -925,6 +970,9 @@ def import_cookies_into_profile(
         "profile": profile_name,
         "cookie_count": len(normalized),
         "has_secondary_binding": has_sec,
+        "has_lsid": has_lsid,
+        "has_osid": has_osid,
+        "persistence_level": persistence_level,
         "authuser": resolved_authuser,
         "storage_path": str(storage_path),
     }

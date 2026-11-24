@@ -310,7 +310,7 @@ def test_bridge_and_system_routes_e2e(
         r_sys = client.get("/api/system/info")
         assert r_sys.status_code == 200
         sys_data = r_sys.json()
-        assert sys_data["app_version"] == "0.3.0"
+        assert sys_data["app_version"] == "0.3.1"
         assert sys_data["desktop_mode"] is False
 
         r_win_bad = client.post("/api/system/open-window", json={"path": "//evil.example.com"})
@@ -350,3 +350,255 @@ def test_bridge_and_system_routes_e2e(
         r_jobs = client.get("/api/bridge/jobs")
         assert r_jobs.status_code == 200
         assert any(j["job_id"] == jid for j in r_jobs.json()["jobs"])
+
+
+def test_desktop_isolation_cmd_login_and_persistence(
+    isolated_env: dict[str, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.adapters import browser_takeover, nlm_py_adapter
+    from app.core.quota_poller import poll_one_account
+    from app.core.win_runtime import get_current_desktop_name, is_interactive_desktop
+
+    nlm_home = isolated_env["data"] / "nlm_home"
+    monkeypatch.setenv("NOTEBOOKLM_HOME", str(nlm_home))
+
+    assert isinstance(get_current_desktop_name(), str)
+    assert isinstance(is_interactive_desktop(), bool)
+
+    # URL validation + Google AccountChooser construction
+    g_url = browser_takeover.build_google_login_url("worker@gmail.com", "https://notebook.google.com/")
+    assert g_url.startswith("https://accounts.google.com/AccountChooser?")
+    assert "Email=worker%40gmail.com" in g_url
+    assert browser_takeover.build_google_login_url(None, "https://pan.baidu.com/disk/main") == "https://pan.baidu.com/disk/main"
+    with pytest.raises(ValueError):
+        browser_takeover.build_google_login_url(None, "file:///C:/Windows/System32/calc.exe")
+    with pytest.raises(ValueError):
+        browser_takeover.build_google_login_url(None, "--gpu-launcher=evil")
+
+    # Isolated desktop refusal: never spawns hidden browser
+    spawned: list[Any] = []
+    monkeypatch.setattr(browser_takeover, "find_browser_executable", lambda b="chrome": ("chrome", Path(sys.executable)))
+    monkeypatch.setattr(browser_takeover, "is_interactive_desktop", lambda: False)
+    monkeypatch.setattr(browser_takeover, "get_current_desktop_name", lambda: "exebox-TEST")
+    monkeypatch.setattr(browser_takeover, "_get_cdp_browser_info", lambda _port: None)
+    monkeypatch.setattr(
+        browser_takeover,
+        "_launch_visible_windows",
+        lambda exe, args: spawned.append((exe, args)) or (True, 123),
+    )
+
+    iso_res = browser_takeover.open_account_browser(
+        "ultra-test",
+        isolated_env["data"] / "chrome_profiles" / "ultra-test",
+        9255,
+        url=g_url,
+        browser="chrome",
+    )
+    assert spawned == []
+    assert iso_res["launched"] is False
+    assert iso_res["desktop_isolated"] is True
+    assert iso_res["desktop_name"] == "exebox-TEST"
+    assert iso_res["cdp_ready"] is False
+    assert "--remote-debugging-port=9255" in iso_res["manual_cmd"]
+
+    # Generated .cmd login script must use CRLF, UTF-8 (no BOM) and sanitize dangerous chars
+    cmd_text = browser_takeover.generate_windows_login_cmd_script(
+        alias='acct&|<>^"',
+        chrome_profile_dir=isolated_env["data"] / "chrome_profiles" / "ultra-test",
+        cdp_port=9255,
+        url=g_url,
+        browser="chrome",
+        api_capture_url="http://127.0.0.1:8765/api/accounts/1/capture-cdp",
+    )
+    assert cmd_text.startswith("@echo off\r\nchcp 65001 >nul\r\n")
+    assert "\xef\xbb\xbf" not in cmd_text
+    assert "AccountChooser" in cmd_text
+    assert "http://127.0.0.1:8765/api/accounts/1/capture-cdp" in cmd_text
+
+    # Persistence detection: short_term (OSID only) vs long_term (accounts.google.com LSID)
+    short_cookies = [
+        {"name": "SID", "value": "sid-val", "domain": ".google.com", "path": "/"},
+        {"name": "__Secure-1PSIDTS", "value": "ts-val", "domain": ".google.com", "path": "/"},
+        {"name": "OSID", "value": "osid-val", "domain": "notebook.google.com", "path": "/"},
+    ]
+    res_short = nlm_py_adapter.import_cookies_into_profile("prof_short", short_cookies, email="short@gmail.com", authuser=0)
+    assert res_short["persistence_level"] == "short_term"
+    assert nlm_py_adapter.check_local_auth("prof_short")["persistence_level"] == "short_term"
+
+    long_cookies = short_cookies + [
+        {"name": "LSID", "value": "lsid-val", "domain": "accounts.google.com", "path": "/"},
+        {"name": "APISID", "value": "api-val", "domain": ".google.com", "path": "/"},
+        {"name": "SAPISID", "value": "sapi-val", "domain": ".google.com", "path": "/"},
+    ]
+    res_long = nlm_py_adapter.import_cookies_into_profile("prof_long", long_cookies, email="long@gmail.com", authuser=0)
+    assert res_long["has_lsid"] is True
+    assert res_long["persistence_level"] == "long_term"
+    assert nlm_py_adapter.check_local_auth("prof_long")["persistence_level"] == "long_term"
+
+    # Web routes for system info, .cmd script download, CMD launch, and silent refresh
+    with TestClient(app) as client:
+        r_sys = client.get("/api/system/info")
+        assert r_sys.status_code == 200
+        assert r_sys.json()["app_version"] == "0.3.1"
+        assert "interactive_desktop" in r_sys.json()
+
+        r_acct = client.post(
+            "/api/accounts",
+            json={"alias": "ultra-cmd", "email": "worker@gmail.com", "tier": "ultra"},
+        )
+        assert r_acct.status_code == 200
+        acct_id = r_acct.json()["account"]["id"]
+
+        r_cmd_dl = client.get(f"/api/accounts/{acct_id}/login-script.cmd?browser=chrome")
+        assert r_cmd_dl.status_code == 200
+        assert r_cmd_dl.text.startswith("@echo off")
+        assert "Email=worker%%40gmail.com&continue=https%%3A%%2F%%2Fnotebook.google.com%%2F" in r_cmd_dl.text
+
+        r_cmd_launch = client.post(
+            f"/api/accounts/{acct_id}/launch-cmd-login",
+            json={"url": "https://notebook.google.com/", "browser": "chrome"},
+        )
+        assert r_cmd_launch.status_code == 200
+        assert r_cmd_launch.json()["desktop_isolated"] is True
+        assert "login-script.cmd" in r_cmd_launch.json()["script_download_url"]
+
+        r_br_dl = client.get("/api/bridge/auth/login-script.cmd?browser=chrome")
+        assert r_br_dl.status_code == 200
+        assert "pan.baidu.com" in r_br_dl.text
+
+        # Test auto self-healing + transient error preservation in poll_one_account
+        nlm_py_adapter.import_cookies_into_profile("ultra-cmd", short_cookies, email="worker@gmail.com", authuser=0)
+
+        async def _fake_refresh(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+            return {
+                "refreshed": True,
+                "cookies": long_cookies,
+                "source": "headless_chrome",
+                "final_url": "https://notebook.google.com/",
+            }
+
+        monkeypatch.setattr(browser_takeover, "silent_refresh_cookies_from_profile", _fake_refresh)
+
+        poll_calls = {"n": 0}
+
+        class _HealAdapter:
+            check_local_auth = staticmethod(nlm_py_adapter.check_local_auth)
+            import_cookies_into_profile = staticmethod(nlm_py_adapter.import_cookies_into_profile)
+
+            @staticmethod
+            async def poll_account_usage(_profile: str) -> dict[str, Any]:
+                poll_calls["n"] += 1
+                if poll_calls["n"] == 1:
+                    return {"auth_status": "expired", "status": "error", "error_msg": "Authentication expired"}
+                if poll_calls["n"] == 2:
+                    return {
+                        "auth_status": "ok",
+                        "status": "ready",
+                        "five_hour_used_pct": 10.0,
+                        "five_hour_remaining_pct": 90.0,
+                        "weekly_used_pct": 5.0,
+                        "weekly_remaining_pct": 95.0,
+                        "actions": [],
+                    }
+                return {"auth_status": "error", "status": "error", "error_msg": "Temporary RPC 503 timeout"}
+
+        healed = asyncio.run(poll_one_account(acct_id, adapter=_HealAdapter()))
+        assert healed["nlm_auth_status"] == "ok"
+        assert healed["session_refreshed"] is True
+        assert nlm_py_adapter.check_local_auth("ultra-cmd")["persistence_level"] == "long_term"
+
+        # Transient error when healthy must preserve nlm_auth_status='ok'
+        transient = asyncio.run(poll_one_account(acct_id, adapter=_HealAdapter(), auto_refresh=False))
+        assert transient["nlm_auth_status"] == "ok"
+
+        async def _ok_usage(_profile: str) -> dict[str, Any]:
+            return {
+                "auth_status": "ok",
+                "status": "ready",
+                "five_hour_used_pct": 12.0,
+                "five_hour_remaining_pct": 88.0,
+                "weekly_used_pct": 4.0,
+                "weekly_remaining_pct": 96.0,
+                "actions": [],
+            }
+
+        monkeypatch.setattr(nlm_py_adapter, "poll_account_usage", _ok_usage)
+        r_ref = client.post(f"/api/accounts/{acct_id}/refresh-session")
+        assert r_ref.status_code == 200
+        assert r_ref.json()["ok"] is True
+        assert r_ref.json()["refreshed"] is True
+        assert r_ref.json()["saved"]["has_lsid"] is True
+
+
+def test_p1_coupling_fallback_and_strict_generate_payload(
+    isolated_env: dict[str, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.adapters.router import CapabilityRouter
+    from app.core.coupling import ensure_topic_notebook_for_account
+    from app.db import execute, fetch_one
+
+    async def _case() -> None:
+        await init_db()
+        m_id = await execute(
+            "INSERT INTO accounts (alias, email, tier, nlm_profile, chrome_profile_dir, nlm_auth_status, is_hub_master) VALUES ('master', 'master@gmail.com', 'ultra', 'master', 'prof-master', 'ok', 1)"
+        )
+        w_id = await execute(
+            "INSERT INTO accounts (alias, email, tier, nlm_profile, chrome_profile_dir, nlm_auth_status) VALUES ('worker', 'worker@gmail.com', 'pro', 'worker', 'prof-worker', 'ok')"
+        )
+        t_dir = isolated_env["hub"] / "02_Topics" / "CouplingFallback"
+        (t_dir / "Sources").mkdir(parents=True, exist_ok=True)
+        topic_id = await execute(
+            "INSERT INTO topics (name, drive_folder_path, coupling_mode) VALUES ('CouplingFallback', ?, 'shared_with_drive_fallback')",
+            (str(t_dir),),
+        )
+        await execute(
+            "INSERT INTO notebooks (topic_id, account_id, remote_notebook_id, title, is_master, source_count) VALUES (?, ?, 'nb-master-1', 'CouplingFallback', 1, 1)",
+            (topic_id, m_id),
+        )
+        topic = await fetch_one("SELECT * FROM topics WHERE id = ?", (topic_id,))
+        worker = await fetch_one("SELECT * FROM accounts WHERE id = ?", (w_id,))
+        assert topic is not None and worker is not None
+
+        class _StubRouter:
+            async def share_editor(self, *_args: Any, **_kwargs: Any) -> None:
+                raise RuntimeError("Share RPC rejected")
+
+            async def create_notebook(self, _acct: dict[str, Any], title: str) -> tuple[dict[str, Any], str]:
+                return {"id": "nb-mirror-1", "title": title}, "notebooklm_py"
+
+            async def ingest_file(self, *_args: Any, **_kwargs: Any) -> None:
+                return None
+
+        nb_row, remote_id, is_shared = await ensure_topic_notebook_for_account(
+            topic, worker, _StubRouter()  # type: ignore[arg-type]
+        )
+        assert is_shared is False
+        assert remote_id == "nb-mirror-1"
+        assert nb_row["account_id"] == w_id
+
+    asyncio.run(_case())
+
+    with TestClient(app) as client:
+        r_acct = client.post(
+            "/api/accounts",
+            json={"alias": "strict-acct", "email": "strict@gmail.com", "tier": "ultra"},
+        )
+        aid = r_acct.json()["account"]["id"]
+        nb_id = asyncio.run(
+            execute(
+                "INSERT INTO notebooks (account_id, remote_notebook_id, title, role, source_count) VALUES (?, 'remote-strict-1', 'Strict Test NB', 'owner', 1)",
+                (aid,),
+            )
+        )
+        r_gen = client.post(
+            f"/api/notebooks/{nb_id}/generate",
+            json={"actions": ["report"], "language": "zh"},
+        )
+        assert r_gen.status_code == 200
+        task_id = r_gen.json()["task_ids"][0]
+        row = asyncio.run(fetch_one("SELECT payload_json FROM tasks WHERE id = ?", (task_id,)))
+        assert row is not None
+        payload = json.loads(row["payload_json"])
+        assert payload["strict_account"] is True

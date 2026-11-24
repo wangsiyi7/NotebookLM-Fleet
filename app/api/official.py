@@ -380,7 +380,9 @@ async def list_account_notebooks_live(
         if chosen == "official_mcp":
             items = await official_mcp_client.mcp_list_notebooks(acct["alias"], pid, filter_expr=filter_expr, **pkw)
         elif chosen == "official_rest":
-            items = await official_api.list_notebooks(acct["alias"], pid, filter_expr=filter_expr, **pkw)
+            items = await official_api.list_notebooks(
+                acct["alias"], pid, filter_expr=filter_expr, fetch_all=True, **pkw
+            )
         else:
             items = await nlm_py_adapter.list_notebooks(acct["nlm_profile"])
         return {"channel_used": chosen, "notebooks": items}

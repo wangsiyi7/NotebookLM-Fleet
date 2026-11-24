@@ -16,7 +16,9 @@ from ..config import get_data_dir
 from ..core.drive_hub import ensure_hub_structure
 from ..core.win_runtime import (
     detect_google_drive_mounts,
+    get_current_desktop_name,
     is_frozen,
+    is_interactive_desktop,
     pick_folder_native,
     reveal_in_explorer,
 )
@@ -58,8 +60,10 @@ async def get_system_info(request: Request) -> dict[str, Any]:
         "arch": platform.machine(),
         "python": platform.python_version(),
         "is_frozen": is_frozen(),
-        "app_version": "0.3.0",
+        "app_version": "0.3.1",
         "desktop_mode": ctrl is not None,
+        "desktop_name": get_current_desktop_name(),
+        "interactive_desktop": is_interactive_desktop(),
         "port": getattr(request.app.state, "bound_port", None),
         "data_dir": str(get_data_dir()),
         "browsers": {

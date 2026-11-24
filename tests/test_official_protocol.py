@@ -450,7 +450,9 @@ def test_browser_takeover_chrome_and_edge_visible_launcher(tmp_path: Path, monke
     launched_calls: list[tuple[Path, list[str]]] = []
 
     monkeypatch.setattr(browser_takeover, "find_edge_executable", lambda: fake_edge)
+    monkeypatch.setattr(browser_takeover, "is_interactive_desktop", lambda: True)
     monkeypatch.setattr(browser_takeover, "_get_cdp_browser_info", lambda port: None)
+    monkeypatch.setattr(browser_takeover, "_is_cdp_alive", lambda port: bool(launched_calls))
     monkeypatch.setattr(
         browser_takeover,
         "_launch_visible_windows",

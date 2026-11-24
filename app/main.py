@@ -86,7 +86,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             await asyncio.gather(*bg_tasks, return_exceptions=True)
 
 
-app = FastAPI(title="NotebookLM-Fleet Control Center", version="0.3.0", lifespan=lifespan)
+app = FastAPI(title="NotebookLM-Fleet Control Center", version="0.3.1", lifespan=lifespan)
 
 app.include_router(accounts_router)
 app.include_router(inventory_router)
